@@ -7,7 +7,6 @@ import mezz.jei.api.registration.IRecipeTransferRegistration;
 import net.minecraft.util.ResourceLocation;
 import tfar.ae2wt.AE2WirelessTerminals;
 import tfar.ae2wt.wirelesscraftingterminal.WirelessCraftingTerminalContainer;
-import tfar.ae2wt.wpt.WirelessPatternTerminalContainer;
 
 @JeiPlugin
 public class JeiPlug implements IModPlugin {
@@ -24,7 +23,8 @@ public class JeiPlug implements IModPlugin {
     @Override
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
         registration.addRecipeTransferHandler(new CraftingRecipeTransferHandler(WirelessCraftingTerminalContainer.class, registration.getTransferHelper()), this.CRAFTING);
-        registration.addUniversalRecipeTransferHandler(new PatternRecipeTransferHandler(WirelessPatternTerminalContainer.class, registration.getTransferHelper()));
+        //registration.addUniversalRecipeTransferHandler(new PatternRecipeTransferHandler(WirelessPatternTerminalContainer.class, registration.getTransferHelper()));
+        registration.addUniversalRecipeTransferHandler(new WirelessPatternTerminalRecipeTransferHandler());
     }
 
     public static class RecipeTransferHandler implements IRecipeTransferHandler<WirelessCraftingTerminalContainer> {

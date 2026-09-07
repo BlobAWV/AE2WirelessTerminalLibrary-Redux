@@ -5,7 +5,6 @@ import appeng.core.AEConfig;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextFormatting;
 import tfar.ae2wt.AE2WirelessTerminals;
-import tfar.ae2wt.terminal.IInfinityBoosterCardHolder;
 import tfar.ae2wt.terminal.AbstractWirelessTerminalItem;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.PlayerEntity;
@@ -16,10 +15,11 @@ import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import tfar.ae2wt.util.ChemicalHelper;
 
 import java.util.List;
 
-public class WUTItem extends AbstractWirelessTerminalItem implements IInfinityBoosterCardHolder {
+public class WUTItem extends AbstractWirelessTerminalItem {
 
     public WUTItem() {
         super(AEConfig.instance().getWirelessTerminalBattery(), new Item.Properties().group(AE2WirelessTerminals.ITEM_GROUP).maxStackSize(1));
@@ -37,6 +37,12 @@ public class WUTItem extends AbstractWirelessTerminalItem implements IInfinityBo
         if(WUTHandler.hasTerminal(stack, "crafting")) lines.add(new TranslationTextComponent("item.ae2wtlib.wireless_crafting_terminal").setStyle(Style.EMPTY.applyFormatting(TextFormatting.GRAY)));
         if(WUTHandler.hasTerminal(stack, "interface")) lines.add(new TranslationTextComponent("item.ae2wtlib.wireless_interface_terminal").setStyle(Style.EMPTY.applyFormatting(TextFormatting.GRAY)));
         if(WUTHandler.hasTerminal(stack, "pattern")) lines.add(new TranslationTextComponent("item.ae2wtlib.wireless_pattern_terminal").setStyle(Style.EMPTY.applyFormatting(TextFormatting.GRAY)));
+        if(WUTHandler.hasTerminal(stack, "fluid")) lines.add(new TranslationTextComponent("item.ae2wtlib.wireless_fluid_terminal").setStyle(Style.EMPTY.applyFormatting(TextFormatting.GRAY)));
+
+        if (ChemicalHelper.CHEMICALS_PRESENT && WUTHandler.hasTerminal(stack, "chemical")) {
+            lines.add(new TranslationTextComponent("item.ae2wtlib.wireless_chemical_terminal").setStyle(Style.EMPTY.applyFormatting(TextFormatting.GRAY)));
+        }
+
         super.addInformation(stack, world, lines, advancedTooltips);
     }
 }

@@ -6,7 +6,6 @@ import appeng.client.gui.me.common.Repo;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.IScrollSource;
 import appeng.container.me.common.GridInventoryEntry;
-import appeng.container.me.fluids.FluidTerminalContainer;
 import appeng.core.AELog;
 import appeng.fluids.client.gui.FluidBlitter;
 import appeng.helpers.InventoryAction;
@@ -19,6 +18,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import tfar.ae2wt.ae2copies.FluidRepo;
+import tfar.ae2wt.wut.CycleTerminalButton;
+import tfar.ae2wt.wut.IUniversalTerminalCapable;
 
 import javax.annotation.Nullable;
 import java.text.NumberFormat;
@@ -26,9 +27,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class WirelessFluidTerminalScreen extends MEMonitorableScreen<IAEFluidStack, WirelessFluidTerminalContainer> {
+public class WirelessFluidTerminalScreen extends MEMonitorableScreen<IAEFluidStack, WirelessFluidTerminalContainer> implements IUniversalTerminalCapable {
     public WirelessFluidTerminalScreen(WirelessFluidTerminalContainer container, PlayerInventory playerInventory, ITextComponent title, ScreenStyle style) {
         super(container, playerInventory, title, style);
+        if (container.isWUT()) {
+            widgets.add("cycleTerminal", new CycleTerminalButton(btn -> cycleTerminal()));
+        }
     }
 
     protected Repo<IAEFluidStack> createRepo(IScrollSource scrollSource) {
@@ -58,12 +62,8 @@ public class WirelessFluidTerminalScreen extends MEMonitorableScreen<IAEFluidSta
     protected void handleGridInventoryEntryMouseClick(@Nullable GridInventoryEntry<IAEFluidStack> entry, int mouseButton, ClickType clickType) {
         if (clickType == ClickType.PICKUP) {
             if (mouseButton == 0 && entry != null) {
-                AELog.debug("mouse0 GUI STACK SIZE %s", entry.getStoredAmount());
                 this.container.handleInteraction(entry.getSerial(), InventoryAction.FILL_ITEM);
             } else {
-                if (entry != null) {
-                    AELog.debug("mouse1 GUI STACK SIZE %s", entry.getStoredAmount());
-                }
 
                 this.container.handleInteraction(-1L, InventoryAction.EMPTY_ITEM);
             }

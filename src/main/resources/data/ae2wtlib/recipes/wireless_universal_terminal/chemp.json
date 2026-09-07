@@ -1,0 +1,21 @@
+{
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "mekanism"
+    },
+    {
+      "type": "forge:mod_loaded",
+      "modid": "aeadditions"
+    }
+  ],
+  "type": "ae2wtlib:combine",
+  "TerminalA": {
+    "item": "ae2wtlib:wireless_chemical_terminal"
+  },
+  "TerminalB": {
+    "item": "ae2wtlib:wireless_pattern_terminal"
+  },
+  "TerminalAName": "chemical",
+  "TerminalBName": "pattern"
+}

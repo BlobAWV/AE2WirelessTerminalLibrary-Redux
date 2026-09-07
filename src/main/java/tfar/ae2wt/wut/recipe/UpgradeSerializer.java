@@ -12,7 +12,6 @@ import javax.annotation.Nullable;
 
 public class UpgradeSerializer extends Serializer<Upgrade> {
     public static final UpgradeSerializer INSTANCE = new UpgradeSerializer();
-
     public static final ResourceLocation ID = new ResourceLocation("ae2wtlib", "upgrade");
 
     @Override

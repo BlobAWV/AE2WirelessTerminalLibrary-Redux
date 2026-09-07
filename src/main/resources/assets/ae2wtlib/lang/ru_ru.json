@@ -2,26 +2,58 @@
   "itemGroup.ae2wtlib.general": "AE2 Wireless Terminals (AE2WTLib)",
   "key.category.ae2wtlib": "AE2 Wireless Terminals (AE2WTLib)",
 
-  "gui.ae2wtlib.emptytrash": "Пустая мусорная корзина",
-  "gui.ae2wtlib.emptytrash.desc": "Удаляет содержимое слота Мусорной корзины.",
 
-  "item.ae2wtlib.infinity_booster_card": "Бесконечная карта-ускоритель",
-  "item.ae2wtlib.infinity_booster_card.desc": "Расширяет Беспроводные терминалы до бесконечности.",
+  "item.ae2wtlib.infinity_booster_card": "Бесконечная карта-усилитель (устаревшая)",
+  "item.ae2wtlib.infinity_booster_card.desc": "Если у вас установлен AEInfinityBooster, вы можете преобразовать эту карту в dimension card из AEInfinityBooster.",
   "item.ae2wtlib.magnet_card": "Магнитная карта",
-  "item.ae2wtlib.magnet_card.desc": "Магнитное улучшения для Беспроводного терминала изготовления.",
+  "item.ae2wtlib.magnet_card.desc": "Магнитное улучшения для беспроводных терминалов. Соедините с любым беспроводным терминалом для установки.",
+
+
+  "gui.ae2wtlib.emptytrash": "Опустошить мусорную корзину",
+  "gui.ae2wtlib.emptytrash.desc": "Удаляет содержимое слота Мусорной корзины",
   "gui.ae2wtlib.magnet_card": "Магнитная карта",
-  "gui.ae2wtlib.magnetcard.desc.off": "Выключена",
-  "gui.ae2wtlib.magnetcard.desc.inv": "Подбирать в Инвентарь",
+  "gui.ae2wtlib.magnetcard.desc.off": "Выкл.",
+  "gui.ae2wtlib.magnetcard.desc.inv": "Подбирать в инвентарь",
   "gui.ae2wtlib.magnetcard.desc.me": "Подбирать в МЕ",
-  "gui.ae2wtlib.cycle_terminal.desc": "Открыть следующий Терминал",
+  "gui.ae2wtlib.cycle_terminal": "Переключить терминал",
+  "gui.ae2wtlib.cycle_terminal.desc": "Открыть следующий терминал",
+  "gui.ae2wtlib.fluid_mode.enabled": "Жидкостное кодирование",
+  "gui.ae2wtlib.fluid_mode.enabled.desc": "Разрешает жидкостное кодирование",
+  "gui.ae2wtlib.fluid_mode.disabled": "Жидкостное кодирование",
+  "gui.ae2wtlib.fluid_mode.disabled.desc": "Запрешает жидкостное кодирование",
+  "gui.ae2wtlib.fluid_conversion.enabled": "Конвертация в жидкость",
+  "gui.ae2wtlib.fluid_conversion.enabled.desc": "Разрешает конвертацию в жидкость",
+  "gui.ae2wtlib.fluid_conversion.disabled": "Конвертация в жидкость",
+  "gui.ae2wtlib.fluid_conversion.disabled.desc": "Запрешает конвертацию в жидкость",
+  "gui.ae2wtlib.chemical_terminal": "Химикаты",
+  "gui.ae2wtlib.fluid_terminal": "Жидкости",
+  "gui.ae2wtlib.magnet_filter": "Фильтр магнита",
+  "gui.ae2wtlib.filter_mode.whitelist": "Белый список",
+  "gui.ae2wtlib.filter_mode.blacklist": "Чёрный список",
 
-  "item.ae2wtlib.wireless_crafting_terminal": "Беспроводной терминал изготовления",
-  "item.ae2wtlib.wireless_pattern_terminal": "Беспроводной шаблон терминала",
-  "item.ae2wtlib.wireless_interface_terminal": "Беспроводной интерфейс терминала",
+
+  "item.ae2wtlib.wireless_crafting_terminal": "Беспроводной терминал крафта",
+  "item.ae2wtlib.wireless_pattern_terminal": "Беспроводной терминал шаблонов",
+  "item.ae2wtlib.wireless_interface_terminal": "Беспроводной терминал интерфейсов",
   "item.ae2wtlib.wireless_universal_terminal": "Беспроводной универсальный терминал",
-  "item.ae2wtlib.wireless_universal_terminal.desc": "Терминалов установлено:",
+  "item.ae2wtlib.wireless_universal_terminal.desc": "Установленные терминалы:",
+  "item.ae2wtlib.wireless_fluid_terminal": "Беспроводной жидкостный терминал",
+  "item.ae2wtlib.wireless_chemical_terminal": "Беспроводной химический терминал",
 
-  "key.ae2wtlib.wct": "Открыть Беспроводной терминал изготовления",
-  "key.ae2wtlib.wpt": "Открыть Беспроводной шаблон терминала",
-  "key.ae2wtlib.wit": "Открыть Беспроводной интерфейс терминал"
+
+  "AppEng.GuiITooltip.Unlinked": "Не связанный",
+
+
+  "key.ae2wtlib.wct": "Открыть беспроводной терминал крафта",
+  "key.ae2wtlib.wpt": "Открыть беспроводной терминал шаблонов",
+  "key.ae2wtlib.wit": "Открыть беспроводной терминал интерфейсов",
+  "key.ae2wtlib.fluid": "Открыть беспроводной жидкостный терминал",
+  "key.ae2wtlib.chemical": "Открыть беспроводной химический терминал",
+  "key.ae2wtlib.open_curios_terminal": "Открыть беспроводной терминал в слоте curios",
+  "key.ae2wtlib.toggle_magnet": "Переключить магнит",
+  "key.ae2wtlib.toggle_pickup_mode": "Переключить режим подбора магнита (МЕ/Инвентарь)",
+  "key.ae2wtlib.open_magnet_filter": "Открыть фильтр магнита",
+
+
+  "curios.identifier.wireless_terminal": "Беспроводной терминал"
 }

@@ -1,0 +1,17 @@
+{
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "aeinfinitybooster"
+    }
+  ],
+  "result": {
+    "item": "aeinfinitybooster:dimension_card"
+  },
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "ae2wtlib:infinity_booster_card"
+    }
+  ]
+}

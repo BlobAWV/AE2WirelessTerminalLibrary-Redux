@@ -12,11 +12,6 @@
       "bottom": 24,
       "grid": "HORIZONTAL"
     },
-    "BIOMETRIC_CARD": {
-      "$comment": "INFINITY_BOOSTER_CARD",
-      "left": 80,
-      "bottom": 102
-    },
     "BLANK_PATTERN": {
       "left": 147,
       "bottom": 163
@@ -110,6 +105,22 @@
     "cycleTerminal": {
       "left": -20,
       "top": 108
+    },
+    "fluidModeEnabled": {
+      "left": 74,
+      "bottom": 154
+    },
+    "fluidModeDisabled": {
+      "left": 74,
+      "bottom": 154
+    },
+    "fluidConversionEnabled": {
+      "left": 84,
+      "bottom": 154
+    },
+    "fluidConversionDisabled": {
+      "left": 84,
+      "bottom": 154
     }
   }
 }

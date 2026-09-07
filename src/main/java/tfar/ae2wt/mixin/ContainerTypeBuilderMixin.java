@@ -32,7 +32,6 @@ public class ContainerTypeBuilderMixin<I> {
             return;
         }
 
-        // FIXME: this shouldn't be hardcoded
         if (it.getItem() instanceof AbstractWirelessTerminalItem) {
             AbstractWirelessTerminalItem awti = (AbstractWirelessTerminalItem)it.getItem();
             if (awti instanceof WCTItem) {

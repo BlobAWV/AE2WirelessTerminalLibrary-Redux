@@ -16,7 +16,7 @@ public class TermFactory implements INamedContainerProvider {
     private final WTGuiObject obj;
     private final ContainerLocator locator;
 
-    TermFactory(WTGuiObject obj, ContainerLocator locator) {
+    public TermFactory(WTGuiObject obj, ContainerLocator locator) {
 
         this.obj = obj;
         this.locator = locator;
@@ -24,7 +24,7 @@ public class TermFactory implements INamedContainerProvider {
 
     @Override
     public ITextComponent getDisplayName() {
-        return  GuiText.Terminal.text();
+        return GuiText.Terminal.text();
     }
 
     @Nullable
@@ -32,8 +32,6 @@ public class TermFactory implements INamedContainerProvider {
     public Container createMenu(int p_createMenu_1_, PlayerInventory p_createMenu_2_, PlayerEntity p_createMenu_3_) {
 
         WirelessInterfaceTerminalContainer c = new WirelessInterfaceTerminalContainer(p_createMenu_1_, p_createMenu_2_, obj);
-        // Set the original locator on the opened server-side container for it to more
-        // easily remember how to re-open after being closed.
         c.setLocator(locator);
         return c;
     }

@@ -16,7 +16,7 @@ import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.item.crafting.IRecipeType;
-import net.minecraft.util.Hand;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Util;
 import net.minecraft.world.World;
@@ -45,12 +45,9 @@ import appeng.util.inv.WrapperInvItemHandler;
 
 import tfar.ae2wt.WTConfig;
 import tfar.ae2wt.init.Menus;
-import tfar.ae2wt.terminal.AbstractWirelessTerminalItem;
-import tfar.ae2wt.terminal.InternalInventory;
-import tfar.ae2wt.terminal.SlotType;
-import tfar.ae2wt.terminal.WTInventoryHandler;
-import tfar.ae2wt.wirelesscraftingterminal.magnet_card.ItemMagnetCard;
-import tfar.ae2wt.wirelesscraftingterminal.magnet_card.MagnetSettings;
+import tfar.ae2wt.terminal.*;
+import tfar.ae2wt.util.CuriosHelper;
+import tfar.ae2wt.magnet.ItemMagnetCard;
 import tfar.ae2wt.wut.WUTItem;
 
 import java.util.List;
@@ -58,16 +55,29 @@ import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 
-public class WirelessCraftingTerminalContainer extends ItemTerminalContainer implements IContainerCraftingPacket, IAEAppEngInventory {
-    public static WirelessCraftingTerminalContainer openClient(int windowId, PlayerInventory inv) {
-        PlayerEntity player = inv.player;
-        ItemStack it = inv.player.getHeldItem(Hand.MAIN_HAND);
-        ContainerLocator locator = ContainerLocator.forHand(inv.player, Hand.MAIN_HAND);
-        WCTGuiObject host = new WCTGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
-        return new WirelessCraftingTerminalContainer(windowId, inv, host);
+public class WirelessCraftingTerminalContainer extends ItemTerminalContainer implements IContainerCraftingPacket, IAEAppEngInventory, IWirelessTerminalContainer {
+
+    @Override
+    public ItemStack getTerminalStack() {
+        return wctGUIObject.getItemStack();
     }
 
-    private final int slot;
+    public static WirelessCraftingTerminalContainer openClient(int windowId, PlayerInventory inv, PacketBuffer data) {
+        boolean hasLocator = data.readBoolean();
+        PlayerEntity player = inv.player;
+        if (hasLocator) {
+            ContainerLocator locator = ContainerLocator.read(data);
+            ItemStack it = player.inventory.getStackInSlot(locator.getItemIndex());
+            WCTGuiObject host = new WCTGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
+            return new WirelessCraftingTerminalContainer(windowId, inv, host);
+        } else {
+            ItemStack stack = data.readItemStack();
+            WCTGuiObject host = new WCTGuiObject((AbstractWirelessTerminalItem) stack.getItem(), stack, player, -1);
+            return new WirelessCraftingTerminalContainer(windowId, inv, host);
+        }
+    }
+
+    private int slot;
     private int ticks = 0;
     private double powerMultiplier = 0.5;
 
@@ -82,18 +92,27 @@ public class WirelessCraftingTerminalContainer extends ItemTerminalContainer imp
     public static void openServer(PlayerEntity player, ContainerLocator locator) {
         ItemStack it = player.inventory.getStackInSlot(locator.getItemIndex());
         WCTGuiObject accessInterface = new WCTGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
-
         if (locator.hasItemIndex()) {
-            NetworkHooks.openGui((ServerPlayerEntity) player, new TermFactory(accessInterface, locator));
+            NetworkHooks.openGui((ServerPlayerEntity) player,
+                    new TermFactory(accessInterface, locator),
+                    buf -> {
+                        if (locator != null) {
+                            buf.writeBoolean(true);
+                            locator.write(buf);
+                        } else {
+                            buf.writeBoolean(false);
+                            buf.writeItemStack(it);
+                        }
+                    });
         }
     }
-
     public WirelessCraftingTerminalContainer(int id, final PlayerInventory ip, final WCTGuiObject host) {
         super(Menus.WCT, id, ip, host, false);
         wctGUIObject = Objects.requireNonNull(host);
         wtInventoryHandler = new WTInventoryHandler(getPlayerInventory(), wctGUIObject.getItemStack(), this);
         if (host instanceof IInventorySlotAware) {
             this.slot = ((IInventorySlotAware) wctGUIObject).getInventorySlot();
+
         } else {
             this.slot = ip.currentItem;
         }
@@ -107,11 +126,17 @@ public class WirelessCraftingTerminalContainer extends ItemTerminalContainer imp
         this.addSlot(this.outputSlot =
                 new WirelessCraftingTermSlot(this.getPlayerInventory().player, this.getActionSource(), this.powerSource, host.getIStorageGrid(), craftingGridInv, craftingGridInv, this), SlotSemantic.CRAFTING_RESULT);
 
-        this.lockPlayerInventorySlot(this.slot);
+        if (host instanceof IInventorySlotAware) {
+            this.slot = ((IInventorySlotAware) host).getInventorySlot();
+        } else {
+            this.slot = -1;
+        }
+        if (this.slot >= 0 && this.slot < 36) {
+            lockPlayerInventorySlot(this.slot);
+        }
         this.createPlayerInventorySlots(ip);
 
         this.onCraftMatrixChanged(new WrapperInvItemHandler(craftingGridInv));
-
         addSlot(new AppEngSlot(wtInventoryHandler, 3) {// 8, -76
 
             @OnlyIn(Dist.CLIENT)
@@ -146,10 +171,7 @@ public class WirelessCraftingTerminalContainer extends ItemTerminalContainer imp
         },SlotSemantic.PROCESSING_RESULT);
 
         addSlot(new AppEngSlot(wtInventoryHandler, WTInventoryHandler.TRASH),SlotSemantic.INSCRIBER_PLATE_BOTTOM);//, 98, -22
-        addSlot(new AppEngSlot(wtInventoryHandler, WTInventoryHandler.INFINITY_BOOSTER_CARD),SlotSemantic.BIOMETRIC_CARD);//, 134, -20
-        addSlot(new AppEngSlot(wtInventoryHandler, WTInventoryHandler.MAGNET_CARD),SlotSemantic.INSCRIBER_PLATE_TOP);//TODO fetch texture for card background , 152, -20
 
-        //onCraftMatrixChanged(null);
 
     }
 
@@ -190,10 +212,21 @@ public class WirelessCraftingTerminalContainer extends ItemTerminalContainer imp
         this.powerMultiplier = powerMultiplier;
     }
 
-    //todo, support things outside of mainhand
     @Override
     public boolean canInteractWith(PlayerEntity player) {
-        return wctGUIObject.getItemStack() == player.getHeldItemMainhand();
+        ItemStack terminal = wctGUIObject.getItemStack();
+        if (terminal.isEmpty()) return false;
+
+
+        for (int i = 0; i < player.inventory.getSizeInventory(); i++) {
+            if (player.inventory.getStackInSlot(i) == terminal) return true;
+        }
+
+        if (CuriosHelper.CURIOS_PRESENT && CuriosHelper.isTerminalInCurios(player, terminal)) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override
@@ -204,30 +237,6 @@ public class WirelessCraftingTerminalContainer extends ItemTerminalContainer imp
     public void deleteTrashSlot() {
         wtInventoryHandler.setStackInSlot(WTInventoryHandler.TRASH, ItemStack.EMPTY);
     }
-
-    private MagnetSettings magnetSettings;
-
-    public MagnetSettings getMagnetSettings() {
-        if(magnetSettings == null) return reloadMagnetSettings();
-        return magnetSettings;
-    }
-
-    public void saveMagnetSettings() {
-        ItemMagnetCard.saveMagnetSettings(wctGUIObject.getItemStack(), magnetSettings);
-    }
-
-    public MagnetSettings reloadMagnetSettings() {
-        magnetSettings = ItemMagnetCard.loadMagnetSettings(wctGUIObject.getItemStack());
-        //todo, this needs to be done another way
-  //      if(isClient() && screen != null) screen.resetMagnetSettings();
-        return magnetSettings;
-    }
-
-    // private WirelessCraftingTerminalScreen screen;
-
-    // public void setScreen(WirelessCraftingTerminalScreen screen) {
-    //     this.screen = screen;
-    // }
 
     public boolean isWUT() {
         return wctGUIObject.getItemStack().getItem() instanceof WUTItem;

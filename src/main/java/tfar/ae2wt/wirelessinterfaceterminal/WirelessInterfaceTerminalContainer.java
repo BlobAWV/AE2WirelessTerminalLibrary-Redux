@@ -5,10 +5,12 @@ import appeng.api.config.PowerMultiplier;
 import appeng.api.config.Settings;
 import appeng.api.config.YesNo;
 import appeng.api.networking.IGrid;
+import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.security.IActionHost;
 import appeng.container.AEBaseContainer;
 import appeng.container.ContainerLocator;
+import appeng.container.interfaces.IInventorySlotAware;
 import appeng.container.slot.AppEngSlot;
 import appeng.core.localization.PlayerMessages;
 import appeng.helpers.DualityInterface;
@@ -30,7 +32,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.Hand;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.fml.network.NetworkHooks;
@@ -41,38 +43,77 @@ import tfar.ae2wt.init.Menus;
 import tfar.ae2wt.net.PacketHandler;
 import tfar.ae2wt.net.client.S2CInterfaceTerminalPacket;
 import tfar.ae2wt.terminal.AbstractWirelessTerminalItem;
+import tfar.ae2wt.terminal.IWirelessTerminalContainer;
 import tfar.ae2wt.terminal.WTGuiObject;
 import tfar.ae2wt.terminal.WTInventoryHandler;
+import tfar.ae2wt.util.CuriosHelper;
 import tfar.ae2wt.wut.WUTItem;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class WirelessInterfaceTerminalContainer extends AEBaseContainer {
+public class WirelessInterfaceTerminalContainer extends AEBaseContainer implements IWirelessTerminalContainer {
 
-    public static WirelessInterfaceTerminalContainer openClient(int windowId, PlayerInventory inv) {
+    @Override
+    public ItemStack getTerminalStack() {
+        return witGUIObject.getItemStack();
+    }
+
+    private static Class<? extends IGridHost> classTileDualInterface;
+    private static Class<? extends IGridHost> classPartDualInterface;
+    private static boolean dualInterfaceAvailable = false;
+
+    private static Class<? extends IGridHost> loadIGridHostClass(String className) {
+        try {
+            return (Class<? extends IGridHost>) Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    static {
+        classTileDualInterface = loadIGridHostClass("com.glodblock.github.common.tile.TileDualInterface");
+        classPartDualInterface = loadIGridHostClass("com.glodblock.github.common.part.PartDualInterface");
+        dualInterfaceAvailable = classTileDualInterface != null && classPartDualInterface != null;
+    }
+
+    public static WirelessInterfaceTerminalContainer openClient(int windowId, PlayerInventory inv, PacketBuffer data) {
+        boolean hasLocator = data.readBoolean();
         PlayerEntity player = inv.player;
-        ItemStack it = inv.player.getHeldItem(Hand.MAIN_HAND);
-        ContainerLocator locator = ContainerLocator.forHand(inv.player, Hand.MAIN_HAND);
-        WTGuiObject host = new WITGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
-        return new WirelessInterfaceTerminalContainer(windowId, inv, host);
+        if (hasLocator) {
+            ContainerLocator locator = ContainerLocator.read(data);
+            ItemStack it = player.inventory.getStackInSlot(locator.getItemIndex());
+            WITGuiObject host = new WITGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
+            return new WirelessInterfaceTerminalContainer(windowId, inv, host);
+        } else {
+            ItemStack stack = data.readItemStack();
+            WITGuiObject host = new WITGuiObject((AbstractWirelessTerminalItem) stack.getItem(), stack, player, -1);
+            return new WirelessInterfaceTerminalContainer(windowId, inv, host);
+        }
     }
 
     public static void openServer(PlayerEntity player, ContainerLocator locator) {
-
         ItemStack it = player.inventory.getStackInSlot(locator.getItemIndex());
-        WTGuiObject accessInterface = new WITGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
-
+        WITGuiObject accessInterface = new WITGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
         if (locator.hasItemIndex()) {
-            NetworkHooks.openGui((ServerPlayerEntity) player, new TermFactory(accessInterface,locator));
+            NetworkHooks.openGui((ServerPlayerEntity) player,
+                    new tfar.ae2wt.wirelessinterfaceterminal.TermFactory(accessInterface, locator),
+                    buf -> {
+                        if (locator != null) {
+                            buf.writeBoolean(true);
+                            locator.write(buf);
+                        } else {
+                            buf.writeBoolean(false);
+                            buf.writeItemStack(it);
+                        }
+                    });
         }
-
     }
 
     private final WTGuiObject witGUIObject;
     private static long autoBase = Long.MIN_VALUE;
-    private final Map<IInterfaceHost, WirelessInterfaceTerminalContainer.InvTracker> diList = new HashMap<>();
-    private final Map<Long, WirelessInterfaceTerminalContainer.InvTracker> byId = new HashMap<>();
+    private final Map<IInterfaceHost, InvTracker> diList = new HashMap<>();
+    private final Map<Long, InvTracker> byId = new HashMap<>();
     private IGrid grid;
     private CompoundNBT data = new CompoundNBT();
 
@@ -80,15 +121,19 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer {
         super(Menus.WIT, id, ip, anchor);
         witGUIObject = anchor;
 
-        if(isServer() && witGUIObject.getActionableNode() != null) {
+        if (isServer() && witGUIObject.getActionableNode() != null) {
             grid = witGUIObject.getActionableNode().getGrid();
         }
 
         this.createPlayerInventorySlots(ip);
 
         final WTInventoryHandler fixedWITInv = new WTInventoryHandler(ip, witGUIObject.getItemStack(), this);
-        //173, 129
         addSlot(new AppEngSlot(fixedWITInv, WTInventoryHandler.INFINITY_BOOSTER_CARD));
+
+        int slotIndex = ((IInventorySlotAware) witGUIObject).getInventorySlot();
+        if (slotIndex >= 0 && slotIndex < 36) {
+            lockPlayerInventorySlot(slotIndex);
+        }
     }
 
     private double powerMultiplier = 1;
@@ -98,17 +143,16 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer {
     public void detectAndSendChanges() {
         super.detectAndSendChanges();
 
-        if(!witGUIObject.rangeCheck()) {
-            if(isValidContainer()) {
+        if (!witGUIObject.rangeCheck()) {
+            if (isValidContainer()) {
                 getPlayerInventory().player.sendMessage(PlayerMessages.OutOfRange.get(), Util.DUMMY_UUID);
                 getPlayerInventory().player.closeScreen();
             }
             setValidContainer(false);
         } else {
             powerMultiplier = WTConfig.getPowerMultiplier(witGUIObject.getRange(), witGUIObject.isOutOfRange());
-
-            if(witGUIObject.extractAEPower(1, Actionable.SIMULATE, PowerMultiplier.ONE) == 0) {
-                if(isValidContainer()) {
+            if (witGUIObject.extractAEPower(1, Actionable.SIMULATE, PowerMultiplier.ONE) == 0) {
+                if (isValidContainer()) {
                     getPlayerInventory().player.sendMessage(PlayerMessages.DeviceNotPowered.get(), Util.DUMMY_UUID);
                     getPlayerInventory().player.closeScreen();
                 }
@@ -117,12 +161,12 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer {
         }
 
         ticks++;
-        if(ticks > 10) {
+        if (ticks > 10) {
             witGUIObject.extractAEPower(powerMultiplier * ticks, Actionable.MODULATE, PowerMultiplier.CONFIG);
             ticks = 0;
         }
 
-        if(grid == null) {
+        if (grid == null) {
             return;
         }
 
@@ -130,67 +174,119 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer {
         boolean missing = false;
 
         final IActionHost host = getActionHost();
-        if(host != null) {
+        if (host != null) {
             final IGridNode agn = host.getActionableNode();
-            if(agn != null && agn.isActive()) {
-                for(final IGridNode gn : grid.getMachines(InterfaceTileEntity.class)) {
-                    if(gn.isActive()) {
+            if (agn != null && agn.isActive()) {
+                for (final IGridNode gn : grid.getMachines(InterfaceTileEntity.class)) {
+                    if (gn.isActive()) {
                         final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
-                        if(ih.getInterfaceDuality().getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.NO) {
-                            continue;
-                        }
-
-                        final WirelessInterfaceTerminalContainer.InvTracker t = diList.get(ih);
-
-                        if(t == null) {
-                            missing = true;
-                        } else {
-                            final DualityInterface dual = ih.getInterfaceDuality();
-                            if(!t.name.equals(dual.getTermName())) {
+                        final DualityInterface dual = ih.getInterfaceDuality();
+                        if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                            final InvTracker t = diList.get(ih);
+                            if (t == null) {
                                 missing = true;
+                            } else {
+                                if (!t.name.equals(dual.getTermName())) {
+                                    missing = true;
+                                }
                             }
+                            total++;
                         }
-
-                        total++;
+                    }
+                }
+                for (final IGridNode gn : grid.getMachines(InterfacePart.class)) {
+                    if (gn.isActive()) {
+                        final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                        final DualityInterface dual = ih.getInterfaceDuality();
+                        if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                            final InvTracker t = diList.get(ih);
+                            if (t == null) {
+                                missing = true;
+                            } else {
+                                if (!t.name.equals(dual.getTermName())) {
+                                    missing = true;
+                                }
+                            }
+                            total++;
+                        }
                     }
                 }
 
-                for(final IGridNode gn : grid.getMachines(InterfacePart.class)) {
-                    if(gn.isActive()) {
-                        final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
-                        if(ih.getInterfaceDuality().getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.NO)
-                            continue;
-
-                        final WirelessInterfaceTerminalContainer.InvTracker t = diList.get(ih);
-
-                        if(t == null) missing = true;
-                        else {
-                            final DualityInterface dual = ih.getInterfaceDuality();
-                            if(!t.name.equals(dual.getTermName())) {
-                                missing = true;
+                if (dualInterfaceAvailable) {
+                    try {
+                        for (final IGridNode gn : grid.getMachines(classTileDualInterface)) {
+                            if (gn.isActive()) {
+                                final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                                final DualityInterface dual = ih.getInterfaceDuality();
+                                if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                    final InvTracker t = diList.get(ih);
+                                    if (t == null) {
+                                        missing = true;
+                                    } else {
+                                        if (!t.name.equals(dual.getTermName())) {
+                                            missing = true;
+                                        }
+                                    }
+                                    total++;
+                                }
                             }
                         }
-                        total++;
-                    }
+                        for (final IGridNode gn : grid.getMachines(classPartDualInterface)) {
+                            if (gn.isActive()) {
+                                final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                                final DualityInterface dual = ih.getInterfaceDuality();
+                                if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                    final InvTracker t = diList.get(ih);
+                                    if (t == null) {
+                                        missing = true;
+                                    } else {
+                                        if (!t.name.equals(dual.getTermName())) {
+                                            missing = true;
+                                        }
+                                    }
+                                    total++;
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
                 }
             }
         }
 
-        if(total != diList.size() || missing) regenList(data);
+        if (total != diList.size() || missing) regenList(data);
         else {
-            for(final Map.Entry<IInterfaceHost, WirelessInterfaceTerminalContainer.InvTracker> en : diList.entrySet()) {
-                final WirelessInterfaceTerminalContainer.InvTracker inv = en.getValue();
-                for(int x = 0; x < inv.server.getSlots(); x++)
-                    if(isDifferent(inv.server.getStackInSlot(x), inv.client.getStackInSlot(x))) addItems(data, inv, x, 1);
+            for (final Map.Entry<IInterfaceHost, InvTracker> en : diList.entrySet()) {
+                final InvTracker inv = en.getValue();
+                for (int x = 0; x < inv.server.getSlots(); x++)
+                    if (isDifferent(inv.server.getStackInSlot(x), inv.client.getStackInSlot(x))) addItems(data, inv, x, 1);
             }
         }
 
-        if(!data.isEmpty()) {
-            PacketHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) getPlayerInventory().player),new S2CInterfaceTerminalPacket(data));
+        if (!data.isEmpty()) {
+            PacketHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) getPlayerInventory().player),
+                    new S2CInterfaceTerminalPacket(data));
             data = new CompoundNBT();
         }
     }
 
+
+    private void processMachineNode(IGridNode gn, int total, boolean missing) {
+        if (gn.isActive()) {
+            final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+            final DualityInterface dual = ih.getInterfaceDuality();
+            if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                final InvTracker t = diList.get(ih);
+                if (t == null) {
+                    missing = true;
+                } else {
+                    if (!t.name.equals(dual.getTermName())) {
+                        missing = true;
+                    }
+                }
+                total++;
+            }
+        }
+    }
 
     @Override
     public void doAction(final ServerPlayerEntity player, final InventoryAction action, final int slot, final long id) {
@@ -198,45 +294,34 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer {
         if (inv != null) {
             final ItemStack is = inv.server.getStackInSlot(slot);
             final boolean hasItemInHand = !player.inventory.getItemStack().isEmpty();
-
             final InventoryAdaptor playerHand = new AdaptorItemHandler(new WrapperCursorItemHandler(player.inventory));
-
             final IItemHandler theSlot = new WrapperFilteredItemHandler(new WrapperRangeItemHandler(inv.server, slot, slot + 1), new PatternSlotFilter());
             final InventoryAdaptor interfaceSlot = new AdaptorItemHandler(theSlot);
 
             switch (action) {
                 case PICKUP_OR_SET_DOWN:
-
                     if (hasItemInHand) {
                         ItemStack inSlot = theSlot.getStackInSlot(0);
                         if (inSlot.isEmpty()) {
                             player.inventory.setItemStack(interfaceSlot.addItems(player.inventory.getItemStack()));
-                        }
-                        else {
+                        } else {
                             inSlot = inSlot.copy();
                             final ItemStack inHand = player.inventory.getItemStack().copy();
-
                             ItemHandlerUtil.setStackInSlot(theSlot, 0, ItemStack.EMPTY);
                             player.inventory.setItemStack(ItemStack.EMPTY);
-
                             player.inventory.setItemStack(interfaceSlot.addItems(inHand.copy()));
-
                             if (player.inventory.getItemStack().isEmpty()) {
                                 player.inventory.setItemStack(inSlot);
-                            }
-                            else {
+                            } else {
                                 player.inventory.setItemStack(inHand);
                                 ItemHandlerUtil.setStackInSlot(theSlot, 0, inSlot);
                             }
                         }
-                    }
-                    else {
+                    } else {
                         ItemHandlerUtil.setStackInSlot(theSlot, 0, playerHand.addItems(theSlot.getStackInSlot(0)));
                     }
-
                     break;
                 case SPLIT_OR_PLACE_SINGLE:
-
                     if (hasItemInHand) {
                         ItemStack extra = playerHand.removeItems(1, ItemStack.EMPTY, null);
                         if (!extra.isEmpty()) {
@@ -245,8 +330,7 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer {
                         if (!extra.isEmpty()) {
                             playerHand.addItems(extra);
                         }
-                    }
-                    else if (!is.isEmpty()) {
+                    } else if (!is.isEmpty()) {
                         ItemStack extra = interfaceSlot.removeItems((is.getCount() + 1) / 2, ItemStack.EMPTY, null);
                         if (!extra.isEmpty()) {
                             extra = playerHand.addItems(extra);
@@ -255,29 +339,21 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer {
                             interfaceSlot.addItems(extra);
                         }
                     }
-
                     break;
                 case SHIFT_CLICK:
-
                     final InventoryAdaptor playerInv = InventoryAdaptor.getAdaptor(player);
-
                     ItemHandlerUtil.setStackInSlot(theSlot, 0, playerInv.addItems(theSlot.getStackInSlot(0)));
-
                     break;
                 case MOVE_REGION:
-
                     final InventoryAdaptor playerInvAd = InventoryAdaptor.getAdaptor(player);
                     for (int x = 0; x < inv.server.getSlots(); x++) {
                         ItemHandlerUtil.setStackInSlot(inv.server, x, playerInvAd.addItems(inv.server.getStackInSlot(x)));
                     }
-
                     break;
                 case CREATIVE_DUPLICATE:
-
                     if (player.abilities.isCreativeMode && !hasItemInHand) {
                         player.inventory.setItemStack(is.isEmpty() ? ItemStack.EMPTY : is.copy());
                     }
-
                     break;
                 default:
                     return;
@@ -295,59 +371,91 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer {
         diList.clear();
 
         final IActionHost host = getActionHost();
-        if(host != null) {
+        if (host != null) {
             final IGridNode agn = host.getActionableNode();
-            if(agn != null && agn.isActive()) {
-                for(final IGridNode gn : grid.getMachines(InterfaceTileEntity.class)) {
-                    final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
-                    final DualityInterface dual = ih.getInterfaceDuality();
-                    if(gn.isActive() && dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES)
-                        diList.put(ih, new WirelessInterfaceTerminalContainer.InvTracker(dual, dual.getPatterns(), dual.getTermName()));
+            if (agn != null && agn.isActive()) {
+                for (final IGridNode gn : grid.getMachines(InterfaceTileEntity.class)) {
+                    if (gn.isActive()) {
+                        final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                        final DualityInterface dual = ih.getInterfaceDuality();
+                        if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                            diList.put(ih, new InvTracker(dual, dual.getPatterns(), dual.getTermName()));
+                        }
+                    }
+                }
+                for (final IGridNode gn : grid.getMachines(InterfacePart.class)) {
+                    if (gn.isActive()) {
+                        final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                        final DualityInterface dual = ih.getInterfaceDuality();
+                        if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                            diList.put(ih, new InvTracker(dual, dual.getPatterns(), dual.getTermName()));
+                        }
+                    }
                 }
 
-                for(final IGridNode gn : grid.getMachines(InterfacePart.class)) {
-                    final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
-                    final DualityInterface dual = ih.getInterfaceDuality();
-                    if(gn.isActive() && dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES)
-                        diList.put(ih, new WirelessInterfaceTerminalContainer.InvTracker(dual, dual.getPatterns(), dual.getTermName()));
+                if (dualInterfaceAvailable) {
+                    try {
+                        for (final IGridNode gn : grid.getMachines(classTileDualInterface)) {
+                            if (gn.isActive()) {
+                                final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                                final DualityInterface dual = ih.getInterfaceDuality();
+                                if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                    diList.put(ih, new InvTracker(dual, dual.getPatterns(), dual.getTermName()));
+                                }
+                            }
+                        }
+                        for (final IGridNode gn : grid.getMachines(classPartDualInterface)) {
+                            if (gn.isActive()) {
+                                final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                                final DualityInterface dual = ih.getInterfaceDuality();
+                                if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                    diList.put(ih, new InvTracker(dual, dual.getPatterns(), dual.getTermName()));
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
                 }
             }
         }
 
         data.putBoolean("clear", true);
-
-        for(final Map.Entry<IInterfaceHost, WirelessInterfaceTerminalContainer.InvTracker> en : diList.entrySet()) {
-            final WirelessInterfaceTerminalContainer.InvTracker inv = en.getValue();
+        for (final Map.Entry<IInterfaceHost, InvTracker> en : diList.entrySet()) {
+            final InvTracker inv = en.getValue();
             byId.put(inv.which, inv);
             addItems(data, inv, 0, inv.server.getSlots());
         }
     }
 
+    private void addInterfaceToMap(IGridNode gn) {
+        if (gn.isActive()) {
+            final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+            final DualityInterface dual = ih.getInterfaceDuality();
+            if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                diList.put(ih, new InvTracker(dual, dual.getPatterns(), dual.getTermName()));
+            }
+        }
+    }
+
     private boolean isDifferent(final ItemStack a, final ItemStack b) {
-        if(a.isEmpty() && b.isEmpty()) return false;
-        if(a.isEmpty() || b.isEmpty()) return true;
+        if (a.isEmpty() && b.isEmpty()) return false;
+        if (a.isEmpty() || b.isEmpty()) return true;
         return !ItemStack.areItemsEqual(a, b);
     }
 
-    private void addItems(final CompoundNBT data, final WirelessInterfaceTerminalContainer.InvTracker inv, final int offset, final int length) {
+    private void addItems(final CompoundNBT data, final InvTracker inv, final int offset, final int length) {
         final String name = '=' + Long.toString(inv.which, Character.MAX_RADIX);
         final CompoundNBT tag = data.getCompound(name);
 
-        if(tag.isEmpty()) {
+        if (tag.isEmpty()) {
             tag.putLong("sortBy", inv.sortBy);
             tag.putString("un", ITextComponent.Serializer.toJson(inv.name));
         }
 
-        for(int x = 0; x < length; x++) {
+        for (int x = 0; x < length; x++) {
             final CompoundNBT itemNBT = new CompoundNBT();
-
             final ItemStack is = inv.server.getStackInSlot(x + offset);
-
-            // "update" client side.
             ItemHandlerUtil.setStackInSlot(inv.client, x + offset, is.isEmpty() ? ItemStack.EMPTY : is.copy());
-
-            if(!is.isEmpty()) is.write(itemNBT);
-
+            if (!is.isEmpty()) is.write(itemNBT);
             tag.put(Integer.toString(x + offset), itemNBT);
         }
         data.put(name, tag);
@@ -380,6 +488,22 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer {
         }
     }
 
+    @Override
+    public boolean canInteractWith(PlayerEntity player) {
+        ItemStack terminal = witGUIObject.getItemStack();
+        if (terminal.isEmpty()) return false;
+
+        for (int i = 0; i < player.inventory.getSizeInventory(); i++) {
+            if (player.inventory.getStackInSlot(i) == terminal) return true;
+        }
+
+
+        if (CuriosHelper.CURIOS_PRESENT && CuriosHelper.isTerminalInCurios(player, terminal)) {
+            return true;
+        }
+
+        return false;
+    }
 
     public boolean isWUT() {
         return witGUIObject.getItemStack().getItem() instanceof WUTItem;

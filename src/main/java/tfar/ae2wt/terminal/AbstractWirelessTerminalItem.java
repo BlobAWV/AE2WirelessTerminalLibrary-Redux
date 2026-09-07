@@ -16,8 +16,11 @@ import appeng.util.ConfigManager;
 import appeng.util.Platform;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.tags.Tag;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
@@ -27,11 +30,130 @@ import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.fml.ModList;
 
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.DoubleSupplier;
 
 public abstract class AbstractWirelessTerminalItem extends AEBasePoweredItem implements IWirelessTermHandler {
+
+    private static final String MAGNET_INSTALLED_KEY = "magnetInstalled";
+    private static final String MAGNET_ENABLED_KEY = "magnetEnabled";
+    public static final String MAGNET_PICKUP_MODE_KEY = "magnetPickupMode";
+    private static final String MAGNET_FILTER_MODE_KEY = "magnetFilterMode";
+    private static final String MAGNET_NBT_MATCH_KEY = "magnetNbtMatch";
+    private static final String MAGNET_FILTERS_KEY = "magnetFilters";
+
+    public static boolean hasMagnetUpgrade(ItemStack stack) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return false;
+        return stack.getOrCreateTag().getBoolean(MAGNET_INSTALLED_KEY);
+    }
+
+    public static void enableMagnetUpgrade(ItemStack stack) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return;
+        CompoundNBT tag = stack.getOrCreateTag();
+        tag.putBoolean(MAGNET_INSTALLED_KEY, true);
+        tag.putBoolean(MAGNET_ENABLED_KEY, true);
+        tag.putString(MAGNET_PICKUP_MODE_KEY, "INVENTORY");
+        tag.putString(MAGNET_FILTER_MODE_KEY, "WHITELIST");
+        tag.putBoolean(MAGNET_NBT_MATCH_KEY, false);
+        tag.put(MAGNET_FILTERS_KEY, new ListNBT());
+    }
+
+    public static List<ItemStack> getMagnetFiltersAsList(ItemStack stack) {
+        List<ItemStack> list = new ArrayList<>();
+        ListNBT filters = getMagnetFilters(stack);
+        for (int i = 0; i < filters.size(); i++) {
+            CompoundNBT tag = filters.getCompound(i);
+            ItemStack item = ItemStack.read(tag);
+            if (!item.isEmpty()) list.add(item);
+        }
+        return list;
+    }
+
+    public static boolean isMagnetEnabled(ItemStack stack) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return false;
+        return stack.getOrCreateTag().getBoolean(MAGNET_ENABLED_KEY);
+    }
+
+    public static void setMagnetEnabled(ItemStack stack, boolean enabled) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return;
+        stack.getOrCreateTag().putBoolean(MAGNET_ENABLED_KEY, enabled);
+    }
+
+    public static void setMagnetPickupMode(ItemStack stack, String mode) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return;
+        stack.getOrCreateTag().putString(MAGNET_PICKUP_MODE_KEY, mode);
+    }
+    public static void setMagnetFilterMode(ItemStack stack, String mode) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return;
+        stack.getOrCreateTag().putString(MAGNET_FILTER_MODE_KEY, mode);
+    }
+
+    public static String getMagnetFilterMode(ItemStack stack) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return "WHITELIST";
+        String mode = stack.getOrCreateTag().getString(MAGNET_FILTER_MODE_KEY);
+        return mode.isEmpty() ? "WHITELIST" : mode;
+    }
+
+    public static void setMagnetNbtMatch(ItemStack stack, boolean match) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return;
+        stack.getOrCreateTag().putBoolean(MAGNET_NBT_MATCH_KEY, match);
+    }
+
+    public static boolean getMagnetNbtMatch(ItemStack stack) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return false;
+        return stack.getOrCreateTag().getBoolean(MAGNET_NBT_MATCH_KEY);
+    }
+
+    public static ListNBT getMagnetFilters(ItemStack stack) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return new ListNBT();
+        return stack.getOrCreateTag().getList(MAGNET_FILTERS_KEY, Constants.NBT.TAG_COMPOUND);
+    }
+
+    public static void setMagnetFilters(ItemStack stack, ListNBT filters) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return;
+        stack.getOrCreateTag().put(MAGNET_FILTERS_KEY, filters);
+    }
+
+    public static String getMagnetPickupMode(ItemStack stack) {
+        if (!(stack.getItem() instanceof AbstractWirelessTerminalItem)) return "INVENTORY";
+        String mode = stack.getOrCreateTag().getString(MAGNET_PICKUP_MODE_KEY);
+        return mode.isEmpty() ? "INVENTORY" : mode;
+    }
+
+    private static Tag<Item> getInfiniteRangeTag() {
+        net.minecraft.tags.ITagCollection<Item> tagCollection = ItemTags.getCollection();
+        if (tagCollection == null) return null; // presumably this is always false
+        return (Tag<Item>) tagCollection.getTagByID(new ResourceLocation("ae2wtlib", "infinite_range"));
+    }
+
+    private static Tag<Item> getCrossDimensionTag() {
+        net.minecraft.tags.ITagCollection<Item> tagCollection = ItemTags.getCollection();
+        if (tagCollection == null) return null; // presumably this is always false
+        return (Tag<Item>) tagCollection.getTagByID(new ResourceLocation("ae2wtlib", "cross_dimensional"));
+    }
+
+    public static boolean isInfiniteRangeBooster(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        Tag<Item> tag = getInfiniteRangeTag();
+        return tag != null && tag.contains(stack.getItem());
+    }
+
+    public static boolean isCrossDimensionBooster(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        Tag<Item> tag = getCrossDimensionTag();
+        return tag != null && tag.contains(stack.getItem());
+    }
+
+    public static boolean isFluidCraftPresent() {
+        return ModList.get().isLoaded("fluidcraft");
+    }
 
     public AbstractWirelessTerminalItem(DoubleSupplier powerCapacity, Properties props) {
         super(powerCapacity, props);
@@ -214,22 +336,9 @@ public abstract class AbstractWirelessTerminalItem extends AEBasePoweredItem imp
         wctTag.putBoolean(key, b);
     }
 
-    public boolean hasBoosterCard(ItemStack hostItem) {
-        return getBoosterCard(hostItem).getItem() instanceof ItemInfinityBooster;
-    }
-
-    public void setBoosterCard(ItemStack hostItem, ItemStack boosterCard) {
-        if (hostItem.getItem() instanceof IInfinityBoosterCardHolder) {
-            setSavedSlot(hostItem, boosterCard, SlotType.boosterCard);
-        }
-    }
-
-    public ItemStack getBoosterCard(ItemStack hostItem) {
-        return getSavedSlot(hostItem, SlotType.boosterCard);
-    }
-
     @Override
     public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
         return slotChanged;
     }
+
 }

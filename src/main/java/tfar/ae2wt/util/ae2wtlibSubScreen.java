@@ -16,6 +16,8 @@ import tfar.ae2wt.init.ModItems;
 import tfar.ae2wt.net.C2SSwitchGuiPacket;
 import tfar.ae2wt.net.PacketHandler;
 import tfar.ae2wt.wirelesscraftingterminal.WCTGuiObject;
+import tfar.ae2wt.wirelessfluidterminal.WFluidTGuiObject;
+import tfar.ae2wt.wirelessinterfaceterminal.WITGuiObject;
 import tfar.ae2wt.wpt.WPTGuiObject;
 
 import javax.annotation.Nullable;
@@ -27,18 +29,21 @@ public final class ae2wtlibSubScreen {
     private final ContainerType<?> previousContainerType;
     private final ItemStack previousContainerIcon;
 
-    /**
-     * Based on the container we're opening for, try to determine what it's "primary" GUI would be so that we can go
-     * back to it.
-     */
+
     public ae2wtlibSubScreen(AEBaseScreen<?> gui, Object containerTarget) {
         this.gui = gui;
-        if(containerTarget instanceof WCTGuiObject) {//TODO don't hardcode
+        if(containerTarget instanceof WCTGuiObject) {
             previousContainerIcon = new ItemStack(ModItems.CRAFTING_TERMINAL);
             previousContainerType = Menus.WCT;
         } else if(containerTarget instanceof WPTGuiObject) {
             previousContainerIcon = new ItemStack(ModItems.PATTERN_TERMINAL);
             previousContainerType = Menus.PATTERN;
+        } else if(containerTarget instanceof WFluidTGuiObject) {
+            previousContainerIcon = new ItemStack(ModItems.WIRELESS_FLUID_TERMINAL);
+            previousContainerType = Menus.WIRELESS_FLUID_TERMINAL;
+        } else if(containerTarget instanceof WITGuiObject) {
+            previousContainerIcon = new ItemStack(ModItems.INTERFACE_TERMINAL);
+            previousContainerType = Menus.WIT;
         } else {
             previousContainerIcon = null;
             previousContainerType = null;
@@ -66,7 +71,7 @@ public final class ae2wtlibSubScreen {
         }
     }
 
-    public final void goBack() {
+    public void goBack() {
         PacketHandler.INSTANCE.sendToServer(new C2SSwitchGuiPacket(Registry.MENU.getKey(previousContainerType).getPath()));
     }
 }

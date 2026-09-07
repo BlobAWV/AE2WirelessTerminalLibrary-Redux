@@ -10,11 +10,10 @@
     "ContainerTypeBuilderMixin",
     "CraftConfirmContainerMixin",
     "InvActionPacketMixin",
-    "PlayerInventoryMixin"
+    "AESubScreenMixin"
   ],
   "client": [
-    "AESubScreenMixin",
-    "MeMonitorableScreenWireless"
+
   ],
   "injectors": {
     "defaultRequire": 1

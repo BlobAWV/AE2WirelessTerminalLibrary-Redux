@@ -22,7 +22,7 @@ public class S2CInterfaceTerminalPacket {
     }
 
     public void encode(PacketBuffer buf) {
-         buf.writeCompoundTag(nbt);
+        buf.writeCompoundTag(nbt);
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
@@ -32,7 +32,11 @@ public class S2CInterfaceTerminalPacket {
             final Screen screen = Minecraft.getInstance().currentScreen;
             if (screen instanceof WITScreen) {
                 WITScreen s = (WITScreen) screen;
-                if (nbt != null) s.postUpdate(true,nbt);
+                if (nbt != null) {
+                    // Read the 'clear' flag to determine if this is a full update
+                    boolean fullUpdate = nbt.getBoolean("clear");
+                    s.postUpdate(fullUpdate, nbt);
+                }
             }
         });
         ctx.get().setPacketHandled(true);

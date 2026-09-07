@@ -22,8 +22,6 @@ public class WirelessCraftingTermSlot extends CraftingTermSlot {
     this.container = container;
   }
 
-  // TODO: This is really hacky and NEEDS to be solved with a full container/gui
-  // refactoring.
   @Override
   protected IRecipe<CraftingInventory> findRecipe(CraftingInventory ic, World world) {
     if (this.container instanceof WirelessCraftingTerminalContainer) {
@@ -38,8 +36,6 @@ public class WirelessCraftingTermSlot extends CraftingTermSlot {
     return world.getRecipeManager().getRecipe(IRecipeType.CRAFTING, ic, world).orElse(null);
   }
 
-  // TODO: This is really hacky and NEEDS to be solved with a full container/gui
-  // refactoring.
   @Override
   protected NonNullList<ItemStack> getRemainingItems(CraftingInventory ic, World world) {
     if (this.container instanceof WirelessCraftingTerminalContainer) {

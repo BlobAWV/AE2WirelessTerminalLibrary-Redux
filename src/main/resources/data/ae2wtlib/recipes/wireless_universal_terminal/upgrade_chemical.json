@@ -1,0 +1,17 @@
+{
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "mekanism"
+    },
+    {
+      "type": "forge:mod_loaded",
+      "modid": "aeadditions"
+    }
+  ],
+  "type": "ae2wtlib:upgrade",
+  "Terminal": {
+    "item": "ae2wtlib:wireless_chemical_terminal"
+  },
+  "TerminalName": "chemical"
+}

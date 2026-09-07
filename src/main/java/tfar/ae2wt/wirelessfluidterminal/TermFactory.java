@@ -31,8 +31,6 @@ public class TermFactory implements INamedContainerProvider {
     public Container createMenu(int p_createMenu_1_, PlayerInventory p_createMenu_2_, PlayerEntity p_createMenu_3_) {
 
         WirelessFluidTerminalContainer c = new WirelessFluidTerminalContainer(p_createMenu_1_, p_createMenu_2_, obj);
-        // Set the original locator on the opened server-side container for it to more
-        // easily remember how to re-open after being closed.
         c.setLocator(locator);
         return c;
     }

@@ -26,16 +26,6 @@
       "left": 98,
       "bottom": 106
     },
-    "INSCRIBER_PLATE_TOP": {
-      "$comment": "MAGNET_CARD",
-      "left": 134,
-      "bottom": 104
-    },
-    "BIOMETRIC_CARD": {
-      "$comment": "INFINITY_BOOSTER_CARD",
-      "left": 152,
-      "bottom": 104
-    },
     "MACHINE_INPUT": {
       "$comment": "HELMET",
       "left": 8,
@@ -112,10 +102,6 @@
     "emptyTrash": {
       "left": 116,
       "bottom": 106
-    },
-    "magnetCardToggleButton": {
-      "left": 142,
-      "bottom": 114
     },
     "cycleTerminal": {
       "left": -20,

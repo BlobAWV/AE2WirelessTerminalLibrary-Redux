@@ -4,8 +4,10 @@ import appeng.core.AEConfig;
 import net.minecraft.item.Item;
 import tfar.ae2wt.AE2WirelessTerminals;
 import tfar.ae2wt.terminal.ItemInfinityBooster;
+import tfar.ae2wt.util.ChemicalHelper;
+import tfar.ae2wt.wirelesschemicalterminal.WirelessChemicalTerminalItem;
 import tfar.ae2wt.wirelesscraftingterminal.WCTItem;
-import tfar.ae2wt.wirelesscraftingterminal.magnet_card.ItemMagnetCard;
+import tfar.ae2wt.magnet.ItemMagnetCard;
 import tfar.ae2wt.wirelessfluidterminal.WirelessFluidTerminalItem;
 import tfar.ae2wt.wirelessinterfaceterminal.WITItem;
 import tfar.ae2wt.wpt.WPTItem;
@@ -20,4 +22,6 @@ public class ModItems {
             new Item.Properties().group(AE2WirelessTerminals.ITEM_GROUP).maxStackSize(1));
     public static final ItemInfinityBooster INFINITY_BOOSTER_CARD = new ItemInfinityBooster();
     public static final ItemMagnetCard MAGNET_CARD = new ItemMagnetCard(new Item.Properties().group(AE2WirelessTerminals.ITEM_GROUP).maxStackSize(1));
+
+    public static final WirelessChemicalTerminalItem WIRELESS_CHEMICAL_TERMINAL = ChemicalHelper.CHEMICALS_PRESENT ? new WirelessChemicalTerminalItem() : null;
 }

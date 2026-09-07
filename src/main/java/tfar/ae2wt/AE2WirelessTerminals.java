@@ -3,6 +3,10 @@ package tfar.ae2wt;
 import appeng.api.features.IRegistryContainer;
 import appeng.api.features.IWirelessTermRegistry;
 import appeng.core.Api;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.InterModComms;
+import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
+import tfar.ae2wt.config.ModConfig;
 import tfar.ae2wt.init.Menus;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.item.Item;
@@ -21,6 +25,9 @@ import net.minecraftforge.registries.IForgeRegistryEntry;
 import tfar.ae2wt.client.ae2wtlibclient;
 import tfar.ae2wt.init.ModItems;
 import tfar.ae2wt.net.PacketHandler;
+import tfar.ae2wt.util.ChemicalHelper;
+import tfar.ae2wt.util.CuriosHelper;
+import top.theillusivec4.curios.api.SlotTypeMessage;
 
 @Mod(value = AE2WirelessTerminals.MODID)
 public class AE2WirelessTerminals {
@@ -39,10 +46,14 @@ public class AE2WirelessTerminals {
         bus.addGenericListener(ContainerType.class, Menus::menus);
         MinecraftForge.EVENT_BUS.addListener(Events::serverTick);
         bus.addListener(this::common);
+        bus.addListener(this::enqueueIMC);
         if (FMLEnvironment.dist.isClient()) {
-           // MinecraftForge.EVENT_BUS.addListener(ae2wtlibclient::clientTick);
             bus.addListener(ae2wtlibclient::setup);
         }
+        if (CuriosHelper.CURIOS_PRESENT) {
+            InterModComms.sendTo("curios", SlotTypeMessage.REGISTER_TYPE, () -> new SlotTypeMessage.Builder("wireless_terminal").size(1).build());
+        }
+        ModConfig.register();
     }
 
     private void common(FMLCommonSetupEvent e) {
@@ -57,8 +68,23 @@ public class AE2WirelessTerminals {
         iWirelessTermRegistry.registerWirelessHandler(ModItems.UNIVERSAL_TERMINAL);
         iWirelessTermRegistry.registerWirelessHandler(ModItems.WIRELESS_FLUID_TERMINAL);
 
+        // AE additions integration
+        if (ChemicalHelper.CHEMICALS_PRESENT && ModItems.WIRELESS_CHEMICAL_TERMINAL != null) {
+            iWirelessTermRegistry.registerWirelessHandler(ModItems.WIRELESS_CHEMICAL_TERMINAL);
+        }
     }
 
+    @SubscribeEvent
+    public void enqueueIMC(InterModEnqueueEvent event) {
+        if (CuriosHelper.CURIOS_PRESENT) {
+            InterModComms.sendTo("curios", SlotTypeMessage.REGISTER_TYPE, () -> {
+                SlotTypeMessage.Builder builder = new SlotTypeMessage.Builder("wireless_terminal");
+                builder.size(1);
+                builder.icon(new net.minecraft.util.ResourceLocation("ae2wtlib", "item/empty_wireless_terminal_slot"));
+                return builder.build();
+            });
+        }
+    }
 
     public void items(RegistryEvent.Register<Item> e) {
         register("infinity_booster_card", ModItems.INFINITY_BOOSTER_CARD, e.getRegistry());
@@ -68,6 +94,12 @@ public class AE2WirelessTerminals {
         register("wireless_interface_terminal", ModItems.INTERFACE_TERMINAL, e.getRegistry());
         register("wireless_universal_terminal", ModItems.UNIVERSAL_TERMINAL, e.getRegistry());
         register("wireless_fluid_terminal",ModItems.WIRELESS_FLUID_TERMINAL,e.getRegistry());
+
+        // AE additions integration
+        if (ChemicalHelper.CHEMICALS_PRESENT && ModItems.WIRELESS_CHEMICAL_TERMINAL != null) {
+            register("wireless_chemical_terminal", ModItems.WIRELESS_CHEMICAL_TERMINAL, e.getRegistry());
+        }
+
     }
 
     public static <T extends IForgeRegistryEntry<T>> T register(String name,T obj,IForgeRegistry<T> registry) {

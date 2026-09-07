@@ -102,10 +102,9 @@ repositories{
     maven {
         name "Modmaven"
         url "https://modmaven.dev/"
-        // For Gradle 5.1 and above, limit it to just AE2
-//        content {
-  //          includeGroup 'appeng'
-   //     }
+    }
+    repositories {
+        flatDir { dirs 'libs' }
     }
 }
 
@@ -123,6 +122,11 @@ dependencies {
     compileOnly fg.deobf("mezz.jei:jei-1.16.5:${jei_version}:api")
     // at runtime, use the full JEI jar
     runtimeOnly fg.deobf("mezz.jei:jei-1.16.5:${jei_version}")
+
+    // Curios support
+    compileOnly fg.deobf(":curios-forge-1.16.5-4.1.0.1-api")
+
+
     // Real examples
     // compile 'com.mod-buildcraft:buildcraft:6.0.8:dev'  // adds buildcraft to the dev env
     // compile 'com.googlecode.efficient-java-matrix-library:ejml:0.24' // adds ejml to the dev env

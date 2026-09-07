@@ -7,6 +7,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
+import tfar.ae2wt.terminal.AbstractWirelessTerminalItem;
 
 public class Combine extends Common {
     private final Ingredient TerminalA;
@@ -58,6 +59,24 @@ public class Combine extends Common {
 
         ItemStack wut = outputStack.copy();
         wut.getTag().merge(terminalB).merge(terminalA);
+
+        for (int i = 0; i < inv.getSizeInventory(); i++) {
+            ItemStack stack = inv.getStackInSlot(i);
+            if (AbstractWirelessTerminalItem.hasMagnetUpgrade(stack)) {
+                CompoundNBT sourceTag = stack.getTag();
+                if (sourceTag != null) {
+                    CompoundNBT wutTag = wut.getOrCreateTag();
+                    String[] keys = {"magnetEnabled", "magnetPickupMode", "magnetFilterMode", "magnetNbtMatch", "magnetFilters"};
+                    for (String key : keys) {
+                        if (sourceTag.contains(key)) {
+                            wutTag.put(key, sourceTag.get(key));
+                        }
+                    }
+                }
+                break;
+            }
+        }
+
         return wut;
     }
 

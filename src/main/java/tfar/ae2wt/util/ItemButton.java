@@ -11,6 +11,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 
+import java.util.Collections;
 import java.util.List;
 
 public class ItemButton extends Button implements ITooltip {
@@ -18,6 +19,16 @@ public class ItemButton extends Button implements ITooltip {
     private final ResourceLocation texture;
     public static final ResourceLocation TEXTURE_STATES = new ResourceLocation("appliedenergistics2", "textures/guis/states.png");
     private boolean halfSize = false;
+    private List<ITextComponent> tooltipLines = Collections.emptyList();
+
+    public void setTooltipLines(List<ITextComponent> lines) {
+        this.tooltipLines = lines;
+    }
+
+    @Override
+    public List<ITextComponent> getTooltipMessage() {
+        return tooltipLines.isEmpty() ? Collections.singletonList(getMessage()) : tooltipLines;
+    }
 
     public ItemButton(ResourceLocation texture, Button.IPressable onPress) {
         super(0, 0, 16, 16, StringTextComponent.EMPTY, onPress);
@@ -38,7 +49,6 @@ public class ItemButton extends Button implements ITooltip {
     public void render(MatrixStack matrices, final int mouseX, final int mouseY, float partial) {
 
         Minecraft minecraft = Minecraft.getInstance();
-
         if(visible) {
             TextureManager textureManager = minecraft.getTextureManager();
             textureManager.bindTexture(TEXTURE_STATES);
@@ -103,4 +113,5 @@ public class ItemButton extends Button implements ITooltip {
     public void setHalfSize(final boolean halfSize) {
         this.halfSize = halfSize;
     }
+
 }

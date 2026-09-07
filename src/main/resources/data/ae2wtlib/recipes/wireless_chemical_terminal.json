@@ -1,0 +1,27 @@
+{
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "mekanism"
+    },
+    {
+      "type": "forge:mod_loaded",
+      "modid": "aeadditions"
+    }
+  ],
+  "result": {
+    "item": "ae2wtlib:wireless_chemical_terminal"
+  },
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "appliedenergistics2:wireless_terminal"
+    },
+    {
+      "item": "appliedenergistics2:fluix_pearl"
+    },
+    {
+      "item": "aeadditions:chemical_terminal"
+    }
+  ]
+}

@@ -7,7 +7,10 @@ import net.minecraft.inventory.container.Container;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.fml.network.NetworkEvent;
+import tfar.ae2wt.util.ChemicalHelper;
+import tfar.ae2wt.wirelesschemicalterminal.WirelessChemicalTerminalContainer;
 import tfar.ae2wt.wirelesscraftingterminal.WirelessCraftingTerminalContainer;
+import tfar.ae2wt.wirelessfluidterminal.WirelessFluidTerminalContainer;
 import tfar.ae2wt.wirelessinterfaceterminal.WirelessInterfaceTerminalContainer;
 import tfar.ae2wt.wpt.WirelessPatternTerminalContainer;
 
@@ -55,6 +58,14 @@ public class C2SSwitchGuiPacket {
                         break;
                     case "wireless_interface_terminal":
                         WirelessInterfaceTerminalContainer.openServer(player, locator);
+                        break;
+                    case "wireless_fluid_terminal":
+                        WirelessFluidTerminalContainer.openServer(player, locator);
+                        break;
+                    case "wireless_chemical_terminal":
+                        if (ChemicalHelper.CHEMICALS_PRESENT) {
+                            WirelessChemicalTerminalContainer.openServer(player, locator);
+                        }
                         break;
                 }
             });

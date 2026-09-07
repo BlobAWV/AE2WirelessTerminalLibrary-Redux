@@ -28,8 +28,8 @@ import appeng.core.Api;
 import appeng.tile.networking.WirelessTileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.items.IItemHandler;
 
 public abstract class WTGuiObject implements IGuiItemObject, IEnergySource, IActionHost, IInventorySlotAware {
 
@@ -44,6 +44,7 @@ public abstract class WTGuiObject implements IGuiItemObject, IEnergySource, IAct
     private double myRange = Double.MAX_VALUE;
     private IStorageGrid sg;
     private final int inventorySlot;
+    private boolean boosterActive = false;
 
     public WTGuiObject(final IWirelessTermHandler wh, final ItemStack is, final PlayerEntity ep, int inventorySlot) {
         String encryptionKey = wh.getEncryptionKey(is);
@@ -60,6 +61,7 @@ public abstract class WTGuiObject implements IGuiItemObject, IEnergySource, IAct
             obj = Api.instance().registries().locatable().getLocatableBy(encKey);
         } catch(final NumberFormatException ignored) {}
 
+
         if(obj instanceof IActionHost) {
             final IGridNode n = ((IActionHost) obj).getActionableNode();
             if(n != null) {
@@ -67,37 +69,77 @@ public abstract class WTGuiObject implements IGuiItemObject, IEnergySource, IAct
                 sg = targetGrid.getCache(IStorageGrid.class);
                 itemStorage = sg.getInventory(Api.instance().storage().getStorageChannel(IItemStorageChannel.class));
             }
+
         }
     }
 
     public boolean rangeCheck() {
-        Item item = effectiveItem.getItem();
-        if (item instanceof IInfinityBoosterCardHolder) {
-            boolean hasBoosterCard = ((IInfinityBoosterCardHolder)item).hasBoosterCard(effectiveItem);
-            sqRange = myRange = Double.MAX_VALUE;
+        sqRange = Double.MAX_VALUE;
+        myRange = Double.MAX_VALUE;
+        isOutOfRange = true;
 
-            if (targetGrid != null && itemStorage != null) {
-                if (myWap != null) {
-                    if (myWap.getGrid() == targetGrid) {
-                        return testWap(myWap) || hasBoosterCard;
-                    }
-                    return hasBoosterCard;
-                } else isOutOfRange = true;
+        if (targetGrid == null || itemStorage == null) {
+            return false;
+        }
 
-                final IMachineSet tw = targetGrid.getMachines(WirelessTileEntity.class);
+        boolean hasInfiniteBooster = false;
+        boolean hasCrossBooster = false;
 
-                myWap = null;
+        IMachineSet waps = targetGrid.getMachines(WirelessTileEntity.class);
+        for (IGridNode node : waps) {
+            if (!node.isActive()) continue;
+            IWirelessAccessPoint wap = (IWirelessAccessPoint) node.getMachine();
+            if (!(wap instanceof WirelessTileEntity)) continue;
 
-                for (final IGridNode n : tw) {
-                    final IWirelessAccessPoint wap = (IWirelessAccessPoint) n.getMachine();
-                    if (testWap(wap)) {
-                        myWap = wap;
-                    }
-                }
+            WirelessTileEntity wte = (WirelessTileEntity) wap;
+            IItemHandler inv = wte.getInternalInventory();
+            if (inv == null) continue;
 
-                return myWap != null || hasBoosterCard;
+            ItemStack booster = inv.getStackInSlot(0);
+            if (booster.isEmpty()) continue;
+
+            if (AbstractWirelessTerminalItem.isCrossDimensionBooster(booster)) {
+                hasCrossBooster = true;
+                break;
             }
-            return hasBoosterCard;
+            if (AbstractWirelessTerminalItem.isInfiniteRangeBooster(booster)) {
+                if (wap.getLocation().getWorld() == myPlayer.world) {
+                    hasInfiniteBooster = true;
+                }
+            }
+        }
+
+        if (hasCrossBooster) {
+            sqRange = myRange = 64.0; // Internal energy drain multiplier
+            isOutOfRange = false;
+            boosterActive = true;
+            return true;
+        }
+        if (hasInfiniteBooster) {
+            sqRange = myRange = 64.0; // Internal energy drain multiplier
+            isOutOfRange = false;
+            boosterActive = true;
+            return true;
+        }
+
+        if (myWap != null && myWap.getGrid() != targetGrid) {
+            myWap = null;
+        }
+        if (myWap != null) {
+            if (testWap(myWap)) {
+                return true;
+            }
+            myWap = null;
+        }
+
+        isOutOfRange = true;
+        for (IGridNode node : waps) {
+            if (!node.isActive()) continue;
+            IWirelessAccessPoint wap = (IWirelessAccessPoint) node.getMachine();
+            if (testWap(wap)) {
+                myWap = wap;
+                return true;
+            }
         }
         return false;
     }
@@ -144,15 +186,16 @@ public abstract class WTGuiObject implements IGuiItemObject, IEnergySource, IAct
 
     @Override
     public IGridNode getActionableNode() {
-        rangeCheck();
-        if(myWap != null) {
-            return myWap.getActionableNode();
+        if (!rangeCheck()) {
+            return null;
         }
-        Item item = effectiveItem.getItem();
-        if (item instanceof IInfinityBoosterCardHolder && ((IInfinityBoosterCardHolder) item).hasBoosterCard(effectiveItem)) {
-            if (targetGrid != null) {
-                return targetGrid.getPivot();
-            }
+
+        if (boosterActive && targetGrid != null) {
+            return targetGrid.getPivot();
+        }
+
+        if (myWap != null) {
+            return myWap.getActionableNode();
         }
         return null;
     }
@@ -278,7 +321,7 @@ public abstract class WTGuiObject implements IGuiItemObject, IEnergySource, IAct
         return Api.instance().storage().getStorageChannel(IItemStorageChannel.class);
     }
 
-    public FixedViewCellInventory getViewCellStorage() { //FIXME viemcells
+    public FixedViewCellInventory getViewCellStorage() {
         return fixedViewCellInventory;
     }
 

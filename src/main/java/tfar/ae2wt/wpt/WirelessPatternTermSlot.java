@@ -40,7 +40,6 @@ public class WirelessPatternTermSlot extends PatternTermSlot {
         if(pattern == null)
             return new PatternSlotPacket(new FixedEmptyInventory(9), Api.instance().storage().getStorageChannel(IItemStorageChannel.class).createStack(getStack()), shift);
 
-        //todo this seems like an awful idea
         IAEItemStack[] stacks = new IAEItemStack[9];
         for (int i = 0; i < 9; i++) {
             stacks[i] = Api.instance().storage().getStorageChannel(IItemStorageChannel.class).createStack(pattern.getStackInSlot(i));

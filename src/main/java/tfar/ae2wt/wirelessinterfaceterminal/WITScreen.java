@@ -12,7 +12,6 @@ import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.AETextField;
 import appeng.client.gui.widgets.Scrollbar;
 import appeng.client.gui.widgets.SettingToggleButton;
-import appeng.container.implementations.InterfaceTerminalContainer;
 import appeng.core.AEConfig;
 import appeng.core.Api;
 import appeng.core.AppEng;
@@ -116,6 +115,11 @@ public class WITScreen extends AEBaseScreen<WirelessInterfaceTerminalContainer> 
         this.scrollbar = widgets.addScrollBar("scrollbar");
         this.xSize = GUI_WIDTH;
 
+
+        if (container.isWUT()) {
+            widgets.add("cycleTerminal", new CycleTerminalButton(btn -> cycleTerminal()));
+        }
+
         // Add a terminalstyle button
         TerminalStyle terminalStyle = AEConfig.instance().getTerminalStyle();
         this.addToLeftToolbar(
@@ -161,7 +165,6 @@ public class WITScreen extends AEBaseScreen<WirelessInterfaceTerminalContainer> 
             if (scrollLevel + i < this.lines.size()) {
                 final Object lineObj = this.lines.get(scrollLevel + i);
                 if (lineObj instanceof InterfaceRecord) {
-                    // Note: We have to shift everything after the header up by 1 to avoid black line duplication.
                     final InterfaceRecord inv = (InterfaceRecord) lineObj;
                     for (int z = 0; z < inv.getInventory().getSlots(); z++) {
                         this.container.inventorySlots

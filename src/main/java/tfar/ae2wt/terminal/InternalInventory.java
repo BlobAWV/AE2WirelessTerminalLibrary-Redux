@@ -25,7 +25,7 @@ public class InternalInventory extends AppEngInternalInventory {
     @Override
     protected void onContentsChanged(int slot) {
         super.onContentsChanged(slot);
-        //todo is this correct?
+
         AbstractWirelessTerminalItem.setSavedSlot(terminal, getStackInSlot(slot), identifier , slot);
     }
 }

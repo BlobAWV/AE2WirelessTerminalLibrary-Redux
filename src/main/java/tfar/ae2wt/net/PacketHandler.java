@@ -50,14 +50,59 @@ public class PacketHandler {
                 C2SSwitchGuiPacket::new,
                 C2SSwitchGuiPacket::handle);
 
-        INSTANCE.registerMessage(i++, C2SSetMagnetModePacket.class,
-                C2SSetMagnetModePacket::encode,
-                C2SSetMagnetModePacket::new,
-                C2SSetMagnetModePacket::handle);
-
         INSTANCE.registerMessage(i++, S2CInterfaceTerminalPacket.class,
                 S2CInterfaceTerminalPacket::encode,
                 S2CInterfaceTerminalPacket::new,
                 S2CInterfaceTerminalPacket::handle);
+
+        INSTANCE.registerMessage(i++, C2STogglePatternFluidModePacket.class,
+                C2STogglePatternFluidModePacket::encode,
+                C2STogglePatternFluidModePacket::new,
+                C2STogglePatternFluidModePacket::handle);
+
+        INSTANCE.registerMessage(i++, C2SLoadPatternPacket.class,
+                C2SLoadPatternPacket::encode,
+                C2SLoadPatternPacket::new,
+                C2SLoadPatternPacket::handle);
+
+        INSTANCE.registerMessage(i++, C2SPatternSlotPacket.class,
+                C2SPatternSlotPacket::encode,
+                C2SPatternSlotPacket::new,
+                C2SPatternSlotPacket::handle);
+
+        INSTANCE.registerMessage(i++, C2SToggleFluidConversionPacket.class,
+                C2SToggleFluidConversionPacket::encode,
+                C2SToggleFluidConversionPacket::new,
+                C2SToggleFluidConversionPacket::handle);
+
+        INSTANCE.registerMessage(i++, C2SOpenCuriosTerminalPacket.class,
+                C2SOpenCuriosTerminalPacket::encode,
+                C2SOpenCuriosTerminalPacket::new,
+                C2SOpenCuriosTerminalPacket::handle);
+
+        INSTANCE.registerMessage(i++, C2SHotkeyPacket.class,
+                C2SHotkeyPacket::encode,
+                C2SHotkeyPacket::new,
+                C2SHotkeyPacket::handle);
+
+        INSTANCE.registerMessage(i++, C2SToggleMagnetEnabled.class,
+                C2SToggleMagnetEnabled::encode,
+                C2SToggleMagnetEnabled::new,
+                C2SToggleMagnetEnabled::handle);
+
+        INSTANCE.registerMessage(i++, C2SToggleMagnetPickupMode.class,
+                C2SToggleMagnetPickupMode::encode,
+                C2SToggleMagnetPickupMode::new,
+                C2SToggleMagnetPickupMode::handle);
+
+        INSTANCE.registerMessage(i++, C2SOpenMagnetFilterGui.class,
+                C2SOpenMagnetFilterGui::encode,
+                C2SOpenMagnetFilterGui::new,
+                C2SOpenMagnetFilterGui::handle);
+
+        INSTANCE.registerMessage(i++, C2SUpdateMagnetSettings.class,
+                C2SUpdateMagnetSettings::encode,
+                C2SUpdateMagnetSettings::new,
+                C2SUpdateMagnetSettings::handle);
     }
 }

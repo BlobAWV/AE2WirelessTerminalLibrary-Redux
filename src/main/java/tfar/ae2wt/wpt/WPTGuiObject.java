@@ -10,14 +10,18 @@ import appeng.tile.inventory.AppEngInternalInventory;
 import appeng.util.inv.IAEAppEngInventory;
 import appeng.util.inv.InvOperation;
 import net.minecraft.inventory.container.ContainerType;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.items.IItemHandler;
 import tfar.ae2wt.init.Menus;
-import tfar.ae2wt.init.ModItems;
+import tfar.ae2wt.terminal.AbstractWirelessTerminalItem;
 import tfar.ae2wt.terminal.SlotType;
 import tfar.ae2wt.terminal.WTGuiObject;
 import tfar.ae2wt.terminal.InternalInventory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import tfar.ae2wt.util.FluidCraftHelper;
+
+import java.lang.ref.WeakReference;
 
 public class WPTGuiObject extends WTGuiObject implements IPortableCell, IAEAppEngInventory, IViewCellStorage {
 
@@ -26,9 +30,30 @@ public class WPTGuiObject extends WTGuiObject implements IPortableCell, IAEAppEn
     private final AppEngInternalInventory crafting;
     private final AppEngInternalInventory output;
     private final AppEngInternalInventory pattern;
+    private boolean fluidMode = false;
+    private boolean fluidConversionEnabled = true;
+    private WeakReference<WirelessPatternTerminalContainer> containerRef;
+
+    public void setContainer(WirelessPatternTerminalContainer container) {
+        this.containerRef = new WeakReference<>(container);
+    }
+
+    public boolean isFluidMode() { return fluidMode; }
+
+    public void setFluidMode(boolean mode) {
+        this.fluidMode = mode; }
+
+    public boolean isFluidConversionEnabled() {
+        return fluidConversionEnabled;
+    }
+
+    public void setFluidConversionEnabled(boolean enabled) {
+        this.fluidConversionEnabled = enabled;
+    }
 
     public WPTGuiObject(final IWirelessTermHandler wh, final ItemStack is, final PlayerEntity ep, int inventorySlot) {
         super(wh, is, ep, inventorySlot);
+        this.fluidMode = AbstractWirelessTerminalItem.getBoolean(is, "fluidMode");
         crafting = new InternalInventory(this, 9, SlotType.pattern_crafting, is);
         output = new InternalInventory(this, 3, SlotType.output, is);
         pattern = new InternalInventory(this, 2, SlotType.pattern, is);
@@ -44,6 +69,7 @@ public class WPTGuiObject extends WTGuiObject implements IPortableCell, IAEAppEn
         if(name.equals("output")) return output;
 
         if(name.equals("pattern")) return pattern;
+
         return null;
     }
 
@@ -52,24 +78,89 @@ public class WPTGuiObject extends WTGuiObject implements IPortableCell, IAEAppEn
 
     @Override
     public void onChangeInventory(IItemHandler inv, int slot, InvOperation mc, ItemStack removedStack, ItemStack newStack) {
-        if(inv == pattern && slot == 1) {
+        if (inv == pattern && slot == 1) {
             final ItemStack is = pattern.getStackInSlot(1);
             final ICraftingPatternDetails details = Api.instance().crafting().decodePattern(is, getPlayer().world, false);
-            if(details != null) {
-                setCraftingMode(details.isCraftable());
-                setSubstitution(details.canSubstitute());
-
-                for(int x = 0; x < crafting.getSlots() && x < details.getSparseInputs().length; x++) {
-                    final IAEItemStack item = details.getSparseInputs()[x];
-                    crafting.setStackInSlot(x, item == null ? ItemStack.EMPTY : item.createItemStack());
+            if (details != null) {
+                for (int i = 0; i < crafting.getSlots(); i++) {
+                    crafting.setStackInSlot(i, ItemStack.EMPTY);
+                }
+                for (int i = 0; i < output.getSlots(); i++) {
+                    output.setStackInSlot(i, ItemStack.EMPTY);
                 }
 
-                for(int x = 0; x < output.getSlots() && x < details.getSparseOutputs().length; x++) {
+                setCraftingMode(details.isCraftable());
+                if (details.isCraftable()) {
+                    setSubstitution(details.canSubstitute());
+                }
+
+                if (FluidCraftHelper.PRESENT && FluidCraftHelper.isFluidEncodedPattern(is)) {
+                    setCraftingMode(false);
+                    setFluidMode(true);
+                } else {
+                    setFluidMode(false);
+                }
+
+                for (int x = 0; x < crafting.getSlots() && x < details.getSparseInputs().length; x++) {
+                    final IAEItemStack item = details.getSparseInputs()[x];
+                    ItemStack stack = item == null ? ItemStack.EMPTY : item.createItemStack();
+                    stack = convertToFluidPacket(stack);
+                    crafting.setStackInSlot(x, stack);
+                }
+
+                for (int x = 0; x < output.getSlots() && x < details.getSparseOutputs().length; x++) {
                     final IAEItemStack item = details.getSparseOutputs()[x];
-                    output.setStackInSlot(x, item == null ? ItemStack.EMPTY : item.createItemStack());
+                    ItemStack stack = item == null ? ItemStack.EMPTY : item.createItemStack();
+                    stack = convertToFluidPacket(stack);
+                    output.setStackInSlot(x, stack);
+                }
+
+                WirelessPatternTerminalContainer container = containerRef.get();
+                if (container != null) {
+
+                    if (details.isCraftable()) {
+                        container.getAndUpdateOutput();
+                        container.detectAndSendChanges();
+                    }
+                    container.detectAndSendChanges();
                 }
             }
-        } else if(inv == crafting) fixCraftingRecipes();
+
+        } else if (inv == crafting) {
+            fixCraftingRecipes();
+        }
+    }
+
+    public ItemStack convertToFluidPacket(ItemStack stack) {
+        if (!FluidCraftHelper.PRESENT || stack.isEmpty()) {
+            return stack;
+        }
+
+        if (isFluidMode()) {
+            if (FluidCraftHelper.isFluidPacket(stack)) {
+                return stack;
+            }
+
+            if (FluidCraftHelper.isFluidDrop(stack)) {
+                FluidStack fluid = FluidCraftHelper.getFluidFromDrop(stack);
+                if (!fluid.isEmpty()) {
+                    return FluidCraftHelper.newFluidPacket(fluid);
+                }
+            }
+
+            if (fluidConversionEnabled) {
+                FluidStack fluid = FluidCraftHelper.getFluidFromItem(stack);
+                if (!fluid.isEmpty()) {
+                    return FluidCraftHelper.newFluidPacket(fluid);
+                }
+            }
+            else {
+                return stack;
+            }
+
+        }
+
+        return stack;
     }
 
     @Override

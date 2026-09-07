@@ -8,7 +8,7 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 
-//todo
+
 public class FixedViewCellInventory implements IItemHandlerModifiable {
 
     private static final int viewCellCount = 5;
