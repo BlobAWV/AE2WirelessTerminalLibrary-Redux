@@ -33,6 +33,7 @@ import tfar.ae2wt.init.Menus;
 import tfar.ae2wt.terminal.IWirelessTerminalContainer;
 import tfar.ae2wt.terminal.WTGuiObject;
 import tfar.ae2wt.terminal.AbstractWirelessTerminalItem;
+import tfar.ae2wt.util.ContainerHelper;
 import tfar.ae2wt.util.CuriosHelper;
 import tfar.ae2wt.wut.WUTItem;
 
@@ -65,36 +66,21 @@ public class WirelessFluidTerminalContainer extends MEMonitorableContainer<IAEFl
     }
 
     public static void openServer(PlayerEntity player, ContainerLocator locator) {
-        ItemStack it = player.inventory.getStackInSlot(locator.getItemIndex());
-        WFluidTGuiObject accessInterface = new WFluidTGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
-        if (locator.hasItemIndex()) {
-            NetworkHooks.openGui((ServerPlayerEntity) player,
-                    new tfar.ae2wt.wirelessfluidterminal.TermFactory(accessInterface, locator),
-                    buf -> {
-                        if (locator != null) {
-                            buf.writeBoolean(true);
-                            locator.write(buf);
-                        } else {
-                            buf.writeBoolean(false);
-                            buf.writeItemStack(it);
-                        }
-                    });
-        }
+        ItemStack it = ContainerHelper.resolveTerminal(player, locator, WirelessFluidTerminalItem.class);
+        if (it.isEmpty()) return;
+        WFluidTGuiObject host = new WFluidTGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator != null ? locator.getItemIndex() : -1);
+        NetworkHooks.openGui((ServerPlayerEntity) player, new TermFactory(host, locator), buf -> {
+            buf.writeItemStack(it);
+            locator.write(buf);
+        });
     }
 
     public static WirelessFluidTerminalContainer openClient(int windowId, PlayerInventory inv, PacketBuffer data) {
-        boolean hasLocator = data.readBoolean();
+        ItemStack it = data.readItemStack();
+        ContainerLocator locator = ContainerLocator.read(data);
         PlayerEntity player = inv.player;
-        if (hasLocator) {
-            ContainerLocator locator = ContainerLocator.read(data);
-            ItemStack it = player.inventory.getStackInSlot(locator.getItemIndex());
-            WFluidTGuiObject host = new WFluidTGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
-            return new WirelessFluidTerminalContainer(windowId, inv, host);
-        } else {
-            ItemStack stack = data.readItemStack();
-            WFluidTGuiObject host = new WFluidTGuiObject((AbstractWirelessTerminalItem) stack.getItem(), stack, player, -1);
-            return new WirelessFluidTerminalContainer(windowId, inv, host);
-        }
+        WFluidTGuiObject host = new WFluidTGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
+        return new WirelessFluidTerminalContainer(windowId, inv, host);
     }
 
     @Override

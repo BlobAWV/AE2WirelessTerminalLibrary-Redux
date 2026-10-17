@@ -55,10 +55,7 @@ public class C2SHotkeyPacket {
 
                 if (CuriosHelper.CURIOS_PRESENT) {
                     ItemStack curiosStack = CuriosHelper.findTerminalOfType(player, terminalName);
-                    if (!curiosStack.isEmpty()) {
-                        TerminalOpener.openFromStack(player, curiosStack, terminalName);
-                        return;
-                    }
+                    TerminalOpener.openFromStack(player, curiosStack, terminalName);
                 }
             });
         });

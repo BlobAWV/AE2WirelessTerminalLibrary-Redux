@@ -3,9 +3,13 @@ package tfar.ae2wt.util;
 import appeng.api.util.AEPartLocation;
 import appeng.container.AEBaseContainer;
 import appeng.container.ContainerLocator;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import tfar.ae2wt.wut.WUTItem;
 
 import java.lang.reflect.Constructor;
 
@@ -34,5 +38,30 @@ public final class ContainerHelper {
             return containerLocator;
         } catch(Exception ignored) {}
         return null;
+    }
+
+    public static ContainerLocator curiosLocator() {
+        return getContainerLocatorForSlot(-1);   // -1 = "in curios"
+    }
+
+    public static ItemStack resolveTerminal(PlayerEntity player, ContainerLocator locator, Class<? extends Item> primaryClass) {
+        // Try the locator slot if it is a real, non‑negative index
+        if (locator != null && locator.hasItemIndex()) {
+            int idx = locator.getItemIndex();
+            if (idx >= 0 && idx < player.inventory.getSizeInventory()) {
+                ItemStack s = player.inventory.getStackInSlot(idx);
+                if (primaryClass.isInstance(s.getItem()) || s.getItem() instanceof WUTItem) {
+                    return s;
+                }
+            }
+        }
+        // Fallback to curios (covers the sentinel as well as invalid slots)
+        if (CuriosHelper.CURIOS_PRESENT) {
+            ItemStack s = CuriosHelper.findFirstTerminal(player);
+            if (!s.isEmpty() && (primaryClass.isInstance(s.getItem()) || s.getItem() instanceof WUTItem)) {
+                return s;
+            }
+        }
+        return ItemStack.EMPTY;
     }
 }

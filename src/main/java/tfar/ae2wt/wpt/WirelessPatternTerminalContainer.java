@@ -57,8 +57,10 @@ import tfar.ae2wt.net.server.C2SToggleFluidConversionPacket;
 import tfar.ae2wt.terminal.AbstractWirelessTerminalItem;
 import tfar.ae2wt.terminal.IWirelessTerminalContainer;
 import tfar.ae2wt.terminal.WTInventoryHandler;
+import tfar.ae2wt.util.ContainerHelper;
 import tfar.ae2wt.util.CuriosHelper;
 import tfar.ae2wt.util.FluidCraftHelper;
+import tfar.ae2wt.wirelessinterfaceterminal.WITGuiObject;
 import tfar.ae2wt.wut.WUTItem;
 
 import net.minecraftforge.fml.ModList;
@@ -73,18 +75,11 @@ public class WirelessPatternTerminalContainer extends ItemTerminalContainer impl
     }
 
     public static WirelessPatternTerminalContainer openClient(int windowId, PlayerInventory inv, PacketBuffer data) {
-        boolean hasLocator = data.readBoolean();
+        ItemStack it = data.readItemStack();
+        ContainerLocator locator = ContainerLocator.read(data);
         PlayerEntity player = inv.player;
-        if (hasLocator) {
-            ContainerLocator locator = ContainerLocator.read(data);
-            ItemStack it = player.inventory.getStackInSlot(locator.getItemIndex());
-            WPTGuiObject host = new WPTGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
-            return new WirelessPatternTerminalContainer(windowId, inv, host);
-        } else {
-            ItemStack stack = data.readItemStack();
-            WPTGuiObject host = new WPTGuiObject((AbstractWirelessTerminalItem) stack.getItem(), stack, player, -1);
-            return new WirelessPatternTerminalContainer(windowId, inv, host);
-        }
+        WPTGuiObject host = new WPTGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
+        return new WirelessPatternTerminalContainer(windowId, inv, host);
     }
 
     private final FakeCraftingMatrixSlot[] craftingSlots = new FakeCraftingMatrixSlot[9];
@@ -99,21 +94,13 @@ public class WirelessPatternTerminalContainer extends ItemTerminalContainer impl
 
 
     public static void openServer(PlayerEntity player, ContainerLocator locator) {
-        ItemStack it = player.inventory.getStackInSlot(locator.getItemIndex());
-        WPTGuiObject accessInterface = new WPTGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator.getItemIndex());
-        if (locator.hasItemIndex()) {
-            NetworkHooks.openGui((ServerPlayerEntity) player,
-                    new tfar.ae2wt.wpt.TermFactory(accessInterface, locator),
-                    buf -> {
-                        if (locator != null) {
-                            buf.writeBoolean(true);
-                            locator.write(buf);
-                        } else {
-                            buf.writeBoolean(false);
-                            buf.writeItemStack(it);
-                        }
-                    });
-        }
+        ItemStack it = ContainerHelper.resolveTerminal(player, locator, WPTItem.class);
+        if (it.isEmpty()) return;
+        WPTGuiObject host = new WPTGuiObject((AbstractWirelessTerminalItem) it.getItem(), it, player, locator != null ? locator.getItemIndex() : -1);
+        NetworkHooks.openGui((ServerPlayerEntity) player, new TermFactory(host, locator), buf -> {
+            buf.writeItemStack(it);
+            locator.write(buf);
+        });
     }
 
     private final WPTGuiObject wptGUIObject;
