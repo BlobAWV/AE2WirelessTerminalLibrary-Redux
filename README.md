@@ -13,7 +13,7 @@ It features several wireless versions of Applied Energistics 2 terminals with su
 
 To be exact, this fork features:
   - Wireless Crafting Terminal
-  - Wireless Pattern Terminal (With seamless [AE2 Fluid Crafting](https://www.curseforge.com/minecraft/mc-mods/ae2-fluid-crafting) support)
+  - Wireless Pattern Terminal (With seamless [AE2 Fluid Crafting Rework](https://www.curseforge.com/minecraft/mc-mods/ae2-fluid-crafting-rework) support)
   - Wireless Interface Terminal
   - Wireless Fluid Terminal
   - Wireless Chemical Terminal (If [Mekanism](https://www.curseforge.com/minecraft/mc-mods/mekanism) and [AE Additions - ExtraCells2 Fork](https://www.curseforge.com/minecraft/mc-mods/ae-additions-extra-cells-2-fork) are installed).
@@ -21,7 +21,7 @@ To be exact, this fork features:
   - Support for infinite range and cross-dimensional access with the help of AeInfinityBooster (if [AeInfinityBooster](https://www.curseforge.com/minecraft/mc-mods/aeinfinitybooster) is installed). 
   - Support for curios API slots (if [curios API](https://www.curseforge.com/minecraft/mc-mods/curios) is installed).
   - Magnet card - magnets items into your inventory/ME network and you can configure the filters for it.
-  
+
 ## Missing Features / Known Issues
 -Currently none.
 
