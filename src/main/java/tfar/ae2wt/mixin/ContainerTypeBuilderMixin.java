@@ -2,6 +2,7 @@ package tfar.ae2wt.mixin;
 
 import appeng.container.ContainerLocator;
 import appeng.container.implementations.ContainerTypeBuilder;
+import appeng.helpers.WirelessTerminalGuiObject;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
@@ -34,8 +35,19 @@ public class ContainerTypeBuilderMixin<I> {
 
     @Inject(method = "getHostFromPlayerInventory", at = @At("HEAD"), cancellable = true)
     private void getWirelessHostFromPlayerInventory(PlayerEntity player, ContainerLocator locator, CallbackInfoReturnable<I> cir) {
+
+        if (!hostInterface.isAssignableFrom(WCTGuiObject.class)
+                && !hostInterface.isAssignableFrom(WPTGuiObject.class)
+                && !hostInterface.isAssignableFrom(WITGuiObject.class)
+                && !hostInterface.isAssignableFrom(WFluidTGuiObject.class)
+                && !(ChemicalHelper.CHEMICALS_PRESENT && hostInterface.isAssignableFrom(WChemGuiObject.class))
+                && !hostInterface.isAssignableFrom(WirelessTerminalGuiObject.class)) {
+            return;
+        }
+
         ItemStack it = ContainerHelper.resolveTerminal(player, locator, AbstractWirelessTerminalItem.class);
         if (it.isEmpty()) return;
+        if (!(it.getItem() instanceof AbstractWirelessTerminalItem)) return;
 
         AbstractWirelessTerminalItem awti = (AbstractWirelessTerminalItem) it.getItem();
         int slot = locator != null ? locator.getItemIndex() : -1;
@@ -48,7 +60,7 @@ public class ContainerTypeBuilderMixin<I> {
             cir.setReturnValue(hostInterface.cast(new WITGuiObject(awti, it, player, slot)));
         } else if (awti instanceof WirelessFluidTerminalItem) {
             cir.setReturnValue(hostInterface.cast(new WFluidTGuiObject(awti, it, player, slot)));
-        } else if (awti instanceof WirelessChemicalTerminalItem && ChemicalHelper.CHEMICALS_PRESENT) {
+        } else if (ChemicalHelper.CHEMICALS_PRESENT && awti instanceof WirelessChemicalTerminalItem) {
             cir.setReturnValue(hostInterface.cast(new WChemGuiObject(awti, it, player, slot)));
         } else if (awti instanceof WUTItem) {
             String current = WUTHandler.getCurrentTerminal(it);

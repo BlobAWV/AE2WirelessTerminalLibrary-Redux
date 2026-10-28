@@ -64,10 +64,19 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer implemen
     private static Class<? extends IGridHost> classPartDualInterface;
     private static boolean dualInterfaceAvailable = false;
 
+    //AE2retrofit's extended interfaces
+    private static Class<? extends IGridHost> classExtendedInterfaceTileEntity;
+    private static Class<? extends IGridHost> classExtendedInterfacePart;
+    private static Class<? extends IGridHost> classTileExtendedDualInterface;
+    private static Class<? extends IGridHost> classPartExtendedDualInterface;
+    private static boolean extendedInterfaceAvailable = false;
+    private static boolean extendedDualInterfaceAvailable = false;
+
+    @SuppressWarnings("unchecked")
     private static Class<? extends IGridHost> loadIGridHostClass(String className) {
         try {
             return (Class<? extends IGridHost>) Class.forName(className);
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | NoClassDefFoundError e) {
             return null;
         }
     }
@@ -76,6 +85,16 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer implemen
         classTileDualInterface = loadIGridHostClass("com.glodblock.github.common.tile.TileDualInterface");
         classPartDualInterface = loadIGridHostClass("com.glodblock.github.common.part.PartDualInterface");
         dualInterfaceAvailable = classTileDualInterface != null && classPartDualInterface != null;
+
+        classExtendedInterfaceTileEntity = loadIGridHostClass("blobawv.ae2retrofit.tile.ExtendedInterfaceTileEntity");
+        classExtendedInterfacePart = loadIGridHostClass("blobawv.ae2retrofit.part.ExtendedInterfacePart");
+        extendedInterfaceAvailable = classExtendedInterfaceTileEntity != null && classExtendedInterfacePart != null;
+
+        if (dualInterfaceAvailable) {
+            classTileExtendedDualInterface = loadIGridHostClass("blobawv.ae2retrofit.tile.TileExtendedDualInterface");
+            classPartExtendedDualInterface = loadIGridHostClass("blobawv.ae2retrofit.part.PartExtendedDualInterface");
+            extendedDualInterfaceAvailable = classTileExtendedDualInterface != null && classPartExtendedDualInterface != null;
+        }
     }
 
     public static WirelessInterfaceTerminalContainer openClient(int windowId, PlayerInventory inv, PacketBuffer data) {
@@ -229,6 +248,73 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer implemen
                                         if (!t.name.equals(dual.getTermName())) {
                                             missing = true;
                                         }
+                                    }
+                                    total++;
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                if (extendedInterfaceAvailable) {
+                    for (final IGridNode gn : grid.getMachines(classExtendedInterfaceTileEntity)) {
+                        if (gn.isActive()) {
+                            final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                            final DualityInterface dual = ih.getInterfaceDuality();
+                            if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                final InvTracker t = diList.get(ih);
+                                if (t == null) {
+                                    missing = true;
+                                } else if (!t.name.equals(dual.getTermName())) {
+                                    missing = true;
+                                }
+                                total++;
+                            }
+                        }
+                    }
+                    for (final IGridNode gn : grid.getMachines(classExtendedInterfacePart)) {
+                        if (gn.isActive()) {
+                            final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                            final DualityInterface dual = ih.getInterfaceDuality();
+                            if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                final InvTracker t = diList.get(ih);
+                                if (t == null) {
+                                    missing = true;
+                                } else if (!t.name.equals(dual.getTermName())) {
+                                    missing = true;
+                                }
+                                total++;
+                            }
+                        }
+                    }
+                }
+                if (dualInterfaceAvailable && extendedDualInterfaceAvailable) {
+                    try {
+                        for (final IGridNode gn : grid.getMachines(classTileExtendedDualInterface)) {
+                            if (gn.isActive()) {
+                                final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                                final DualityInterface dual = ih.getInterfaceDuality();
+                                if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                    final InvTracker t = diList.get(ih);
+                                    if (t == null) {
+                                        missing = true;
+                                    } else if (!t.name.equals(dual.getTermName())) {
+                                        missing = true;
+                                    }
+                                    total++;
+                                }
+                            }
+                        }
+                        for (final IGridNode gn : grid.getMachines(classPartExtendedDualInterface)) {
+                            if (gn.isActive()) {
+                                final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                                final DualityInterface dual = ih.getInterfaceDuality();
+                                if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                    final InvTracker t = diList.get(ih);
+                                    if (t == null) {
+                                        missing = true;
+                                    } else if (!t.name.equals(dual.getTermName())) {
+                                        missing = true;
                                     }
                                     total++;
                                 }
@@ -401,6 +487,49 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer implemen
                         }
                     } catch (Exception ignored) {}
                 }
+
+                if (extendedInterfaceAvailable) {
+                    for (final IGridNode gn : grid.getMachines(classExtendedInterfaceTileEntity)) {
+                        if (gn.isActive()) {
+                            final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                            final DualityInterface dual = ih.getInterfaceDuality();
+                            if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                diList.put(ih, new InvTracker(dual, dual.getPatterns(), dual.getTermName()));
+                            }
+                        }
+                    }
+                    for (final IGridNode gn : grid.getMachines(classExtendedInterfacePart)) {
+                        if (gn.isActive()) {
+                            final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                            final DualityInterface dual = ih.getInterfaceDuality();
+                            if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                diList.put(ih, new InvTracker(dual, dual.getPatterns(), dual.getTermName()));
+                            }
+                        }
+                    }
+                }
+                if (dualInterfaceAvailable && extendedDualInterfaceAvailable) {
+                    try {
+                        for (final IGridNode gn : grid.getMachines(classTileExtendedDualInterface)) {
+                            if (gn.isActive()) {
+                                final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                                final DualityInterface dual = ih.getInterfaceDuality();
+                                if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                    diList.put(ih, new InvTracker(dual, dual.getPatterns(), dual.getTermName()));
+                                }
+                            }
+                        }
+                        for (final IGridNode gn : grid.getMachines(classPartExtendedDualInterface)) {
+                            if (gn.isActive()) {
+                                final IInterfaceHost ih = (IInterfaceHost) gn.getMachine();
+                                final DualityInterface dual = ih.getInterfaceDuality();
+                                if (dual.getConfigManager().getSetting(Settings.INTERFACE_TERMINAL) == YesNo.YES) {
+                                    diList.put(ih, new InvTracker(dual, dual.getPatterns(), dual.getTermName()));
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
             }
         }
 
@@ -435,6 +564,7 @@ public class WirelessInterfaceTerminalContainer extends AEBaseContainer implemen
         if (tag.isEmpty()) {
             tag.putLong("sortBy", inv.sortBy);
             tag.putString("un", ITextComponent.Serializer.toJson(inv.name));
+            tag.putInt("slotCount", inv.server.getSlots());
         }
 
         for (int x = 0; x < length; x++) {

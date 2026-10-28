@@ -94,7 +94,7 @@ public class WPTGuiObject extends WTGuiObject implements IPortableCell, IAEAppEn
                     setSubstitution(details.canSubstitute());
                 }
 
-                if (FluidCraftHelper.PRESENT && FluidCraftHelper.isFluidEncodedPattern(is)) {
+                if (FluidCraftHelper.FLUIDCRAFT_PRESENT && FluidCraftHelper.isFluidEncodedPattern(is)) {
                     setCraftingMode(false);
                     setFluidMode(true);
                 } else {
@@ -132,7 +132,7 @@ public class WPTGuiObject extends WTGuiObject implements IPortableCell, IAEAppEn
     }
 
     public ItemStack convertToFluidPacket(ItemStack stack) {
-        if (!FluidCraftHelper.PRESENT || stack.isEmpty()) {
+        if (!FluidCraftHelper.FLUIDCRAFT_PRESENT || stack.isEmpty()) {
             return stack;
         }
 

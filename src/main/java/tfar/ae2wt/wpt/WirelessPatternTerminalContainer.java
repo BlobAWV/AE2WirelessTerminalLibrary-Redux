@@ -60,7 +60,6 @@ import tfar.ae2wt.terminal.WTInventoryHandler;
 import tfar.ae2wt.util.ContainerHelper;
 import tfar.ae2wt.util.CuriosHelper;
 import tfar.ae2wt.util.FluidCraftHelper;
-import tfar.ae2wt.wirelessinterfaceterminal.WITGuiObject;
 import tfar.ae2wt.wut.WUTItem;
 
 import net.minecraftforge.fml.ModList;
@@ -315,7 +314,7 @@ public class WirelessPatternTerminalContainer extends ItemTerminalContainer impl
     }
 
     private void encodeFluidPattern() {
-        if (!FluidCraftHelper.PRESENT) return;
+        if (!FluidCraftHelper.FLUIDCRAFT_PRESENT) return;
         ItemStack[] rawInputs = getInputs();
         ItemStack[] rawOutputs = getOutputs();
         if (rawInputs == null || rawOutputs == null) return;
@@ -404,7 +403,7 @@ public class WirelessPatternTerminalContainer extends ItemTerminalContainer impl
 
     private boolean isPattern(ItemStack stack) {
         if (stack.isEmpty()) return false;
-        if (FluidCraftHelper.PRESENT && FluidCraftHelper.isFluidEncodedPattern(stack)) return true;
+        if (FluidCraftHelper.FLUIDCRAFT_PRESENT && FluidCraftHelper.isFluidEncodedPattern(stack)) return true;
         return craftingHelper.isEncodedPattern(stack) || Api.instance().definitions().materials().blankPattern().isSameAs(stack);
     }
 

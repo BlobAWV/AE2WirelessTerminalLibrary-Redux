@@ -78,6 +78,26 @@ public class WITScreen extends AEBaseScreen<WirelessInterfaceTerminalContainer> 
      */
     private static final int SLOT_SIZE = ROW_HEIGHT;
 
+    /**
+     * One 9-slot row of an interface's pattern inventory. For vanilla interfaces
+     * (9 slots) there is exactly one segment with rowIndex=0. For extended
+     * interfaces (36 slots) there are four segments with rowIndex 0..3. Rendering
+     * and scrollbar math operate on the expanded segment list, so row height stays
+     * uniform (18px) across vanilla and extended rows.
+     */
+    public static final class RowSegment {
+        private final InterfaceRecord record;
+        private final int rowIndex;
+
+        public RowSegment(InterfaceRecord record, int rowIndex) {
+            this.record = record;
+            this.rowIndex = rowIndex;
+        }
+
+        public InterfaceRecord getRecord() { return record; }
+        public int getRowIndex() { return rowIndex; }
+    }
+
     // Bounding boxes of key areas in the UI texture.
     // The upper part of the UI, anything above the scrollable area (incl. its top border)
     private static final Rectangle2d HEADER_BBOX = new Rectangle2d(0, 0, GUI_WIDTH, GUI_HEADER_HEIGHT);
@@ -164,11 +184,17 @@ public class WITScreen extends AEBaseScreen<WirelessInterfaceTerminalContainer> 
         for (; i < this.numLines; ++i) {
             if (scrollLevel + i < this.lines.size()) {
                 final Object lineObj = this.lines.get(scrollLevel + i);
-                if (lineObj instanceof InterfaceRecord) {
-                    final InterfaceRecord inv = (InterfaceRecord) lineObj;
-                    for (int z = 0; z < inv.getInventory().getSlots(); z++) {
-                        this.container.inventorySlots
-                                .add(new InterfaceSlot(inv, z, z * SLOT_SIZE + GUI_PADDING_X, (i + 1) * SLOT_SIZE));
+                if (lineObj instanceof RowSegment) {                              // === CHANGED ===
+                    final RowSegment seg = (RowSegment) lineObj;
+                    final InterfaceRecord inv = seg.getRecord();
+                    final int startSlot = seg.getRowIndex() * 9;
+                    final int endSlot = Math.min(startSlot + 9, inv.getInventory().getSlots());
+                    for (int z = startSlot; z < endSlot; z++) {
+                        final int localZ = z - startSlot;
+                        this.container.inventorySlots.add(new InterfaceSlot(
+                                inv, z,
+                                localZ * SLOT_SIZE + GUI_PADDING_X,
+                                (i + 1) * SLOT_SIZE));
                     }
                 } else if (lineObj instanceof String) {
                     String name = (String) lineObj;
@@ -176,10 +202,9 @@ public class WITScreen extends AEBaseScreen<WirelessInterfaceTerminalContainer> 
                     if (rows > 1) {
                         name = name + " (" + rows + ')';
                     }
-
                     name = this.font.getLineScrollOffset(name, TEXT_MAX_WIDTH, true);
-
-                    this.font.drawString(matrixStack, name, GUI_PADDING_X + INTERFACE_NAME_MARGIN_X,
+                    this.font.drawString(matrixStack, name,
+                            GUI_PADDING_X + INTERFACE_NAME_MARGIN_X,
                             GUI_PADDING_Y + GUI_HEADER_HEIGHT + i * ROW_HEIGHT, textColor);
                 }
             }
@@ -265,7 +290,7 @@ public class WITScreen extends AEBaseScreen<WirelessInterfaceTerminalContainer> 
             isInvLine = false;
             if (scrollLevel + i < this.lines.size()) {
                 final Object lineObj = this.lines.get(scrollLevel + i);
-                isInvLine = lineObj instanceof InterfaceRecord;
+                isInvLine = lineObj instanceof RowSegment;
             }
 
             Rectangle2d bbox = selectRowBackgroundBox(isInvLine, firstLine, lastLine);
@@ -347,7 +372,11 @@ public class WITScreen extends AEBaseScreen<WirelessInterfaceTerminalContainer> 
                     final long id = Long.parseLong(key.substring(1), Character.MAX_RADIX);
                     final CompoundNBT invData = in.getCompound(key);
                     ITextComponent un = ITextComponent.Serializer.getComponentFromJson(invData.getString("un"));
-                    final InterfaceRecord current = this.getById(id, invData.getLong("sortBy"), un);
+
+                    final int slotCount = invData.contains("slotCount")
+                            ? invData.getInt("slotCount")
+                            : DualityInterface.NUMBER_OF_PATTERN_SLOTS;
+                    final InterfaceRecord current = this.getById(id, invData.getLong("sortBy"), un, slotCount);
 
                     for (int x = 0; x < current.getInventory().getSlots(); x++) {
                         final String which = Integer.toString(x);
@@ -355,8 +384,7 @@ public class WITScreen extends AEBaseScreen<WirelessInterfaceTerminalContainer> 
                             current.getInventory().setStackInSlot(x, ItemStack.read(invData.getCompound(which)));
                         }
                     }
-                } catch (final NumberFormatException ignored) {
-                }
+                } catch (final NumberFormatException ignored) {}
             }
         }
 
@@ -426,7 +454,21 @@ public class WITScreen extends AEBaseScreen<WirelessInterfaceTerminalContainer> 
             this.lines.addAll(clientInventories);
         }
 
-        // lines may have changed - recalculate scroll bar.
+        final List<Object> expanded = new ArrayList<>(this.lines.size() * 2);
+        for (Object obj : this.lines) {
+            if (obj instanceof InterfaceRecord) {
+                final InterfaceRecord rec = (InterfaceRecord) obj;
+                final int rows = Math.max(1, (rec.getInventory().getSlots() + 8) / 9);
+                for (int r = 0; r < rows; r++) {
+                    expanded.add(new RowSegment(rec, r));
+                }
+            } else {
+                expanded.add(obj);
+            }
+        }
+        this.lines.clear();
+        this.lines.addAll(expanded);
+
         this.resetScrollbar();
     }
 
@@ -514,14 +556,12 @@ public class WITScreen extends AEBaseScreen<WirelessInterfaceTerminalContainer> 
         return this.names.size() + this.byId.size();
     }
 
-    private InterfaceRecord getById(final long id, final long sortBy, final ITextComponent name) {
+    private InterfaceRecord getById(final long id, final long sortBy, final ITextComponent name, final int slotCount) {
         InterfaceRecord o = this.byId.get(id);
-
         if (o == null) {
-            this.byId.put(id, o = new InterfaceRecord(id, DualityInterface.NUMBER_OF_PATTERN_SLOTS, sortBy, name));
+            this.byId.put(id, o = new InterfaceRecord(id, slotCount, sortBy, name));
             this.refreshList = true;
         }
-
         return o;
     }
 

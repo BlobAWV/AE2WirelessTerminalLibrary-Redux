@@ -55,7 +55,7 @@ public class WirelessPatternTerminalRecipeTransferHandler implements IRecipeTran
             if (stack.isEmpty()) continue;
 
             ItemStack converted = stack;
-            if (FluidCraftHelper.PRESENT) {
+            if (FluidCraftHelper.FLUIDCRAFT_PRESENT) {
                 FluidStack fluid = FluidCraftHelper.getFluidFromItem(stack);
                 if (!fluid.isEmpty()) {
                     if (fluidConversionEnabled) {
@@ -141,7 +141,7 @@ public class WirelessPatternTerminalRecipeTransferHandler implements IRecipeTran
         }
 
         boolean targetCraftingMode = recipeIsCrafting;
-        boolean targetFluidMode = hasFluid && FluidCraftHelper.PRESENT;
+        boolean targetFluidMode = hasFluid && FluidCraftHelper.FLUIDCRAFT_PRESENT;
 
         if (targetFluidMode && targetCraftingMode) {
             return createError("Fluid recipes must be processed as processing patterns");
@@ -178,7 +178,7 @@ public class WirelessPatternTerminalRecipeTransferHandler implements IRecipeTran
             if (stack.isEmpty()) continue;
 
             ItemStack converted = stack;
-            if (FluidCraftHelper.PRESENT) {
+            if (FluidCraftHelper.FLUIDCRAFT_PRESENT) {
                 FluidStack fluid = FluidCraftHelper.getFluidFromItem(stack);
                 if (!fluid.isEmpty()) {
                     if (fluidConversionEnabled) {
@@ -250,7 +250,7 @@ public class WirelessPatternTerminalRecipeTransferHandler implements IRecipeTran
             }
         }
 
-        boolean targetFluidMode = hasFluid && FluidCraftHelper.PRESENT;
+        boolean targetFluidMode = hasFluid && FluidCraftHelper.FLUIDCRAFT_PRESENT;
         boolean targetCraftingMode = true;
 
         if (targetFluidMode) {

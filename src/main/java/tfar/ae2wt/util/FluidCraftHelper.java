@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FluidCraftHelper {
-    public static final boolean PRESENT = ModList.get().isLoaded("ae2fc");
+    public static final boolean FLUIDCRAFT_PRESENT = ModList.get().isLoaded("ae2fc");
     private static Class<?> itemFluidEncodedPatternClass;
     private static Class<?> itemFluidPacketClass;
     private static Class<?> fcItemsClass;
@@ -30,7 +30,7 @@ public class FluidCraftHelper {
     private static Class<?> itemFluidDropClass;
 
     static {
-        if (PRESENT) {
+        if (FLUIDCRAFT_PRESENT) {
             try {
                 itemFluidEncodedPatternClass = Class.forName("com.glodblock.github.common.item.ItemFluidEncodedPattern");
                 itemFluidPacketClass = Class.forName("com.glodblock.github.common.item.ItemFluidPacket");
@@ -47,17 +47,17 @@ public class FluidCraftHelper {
         }
     }
     public static boolean isFluidEncodedPattern(ItemStack stack) {
-        if (!PRESENT || stack.isEmpty()) return false;
+        if (!FLUIDCRAFT_PRESENT || stack.isEmpty()) return false;
         return itemFluidEncodedPatternClass.isInstance(stack.getItem());
     }
 
     public static boolean isFluidDrop(ItemStack stack) {
-        if (!PRESENT || stack.isEmpty()) return false;
+        if (!FLUIDCRAFT_PRESENT || stack.isEmpty()) return false;
         return itemFluidDropClass.isInstance(stack.getItem());
     }
 
     public static ItemStack encodeFluidPattern(ItemStack[] inputs, ItemStack[] outputs) {
-        if (!PRESENT) return ItemStack.EMPTY;
+        if (!FLUIDCRAFT_PRESENT) return ItemStack.EMPTY;
         try {
             List<ItemStack> inputList = new ArrayList<>();
             for (ItemStack stack : inputs) {
@@ -86,7 +86,7 @@ public class FluidCraftHelper {
 
 
     public static FluidStack getFluidFromPacket(ItemStack stack) {
-        if (!PRESENT || stack.isEmpty()) return FluidStack.EMPTY;
+        if (!FLUIDCRAFT_PRESENT || stack.isEmpty()) return FluidStack.EMPTY;
         try {
             return (FluidStack) getFluidStackMethod.invoke(null, stack);
         } catch (Exception e) {
@@ -95,7 +95,7 @@ public class FluidCraftHelper {
     }
 
     public static ItemStack newFluidPacket(FluidStack fluid) {
-        if (!PRESENT || fluid.isEmpty()) return ItemStack.EMPTY;
+        if (!FLUIDCRAFT_PRESENT || fluid.isEmpty()) return ItemStack.EMPTY;
         try {
             return (ItemStack) newStackMethod.invoke(null, fluid);
         } catch (Exception e) {
@@ -104,7 +104,7 @@ public class FluidCraftHelper {
     }
 
     public static FluidStack getFluidFromItem(ItemStack stack) {
-        if (!PRESENT || stack.isEmpty()) return FluidStack.EMPTY;
+        if (!FLUIDCRAFT_PRESENT || stack.isEmpty()) return FluidStack.EMPTY;
         LazyOptional<IFluidHandlerItem> cap = stack.getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, null);
         if (cap.isPresent()) {
             IFluidHandlerItem handler = cap.resolve().orElse(null);
@@ -119,7 +119,7 @@ public class FluidCraftHelper {
     }
 
     public static boolean isFluidPacket(ItemStack stack) {
-        if (!PRESENT || stack.isEmpty()) return false;
+        if (!FLUIDCRAFT_PRESENT || stack.isEmpty()) return false;
         return itemFluidPacketClass.isInstance(stack.getItem());
     }
 
@@ -136,7 +136,7 @@ public class FluidCraftHelper {
     }
 
     public static FluidStack getFluidFromDrop(ItemStack stack) {
-        if (!PRESENT || stack.isEmpty() || !isFluidDrop(stack)) return FluidStack.EMPTY;
+        if (!FLUIDCRAFT_PRESENT || stack.isEmpty() || !isFluidDrop(stack)) return FluidStack.EMPTY;
         try {
             Method method = itemFluidDropClass.getMethod("getFluidStack", ItemStack.class);
             return (FluidStack) method.invoke(null, stack);
